@@ -145,7 +145,7 @@ permute <- function(feats.gr, bp.gr, all.bs, n=1000,
                            '5UTR', 'CpGisl', 'CpGshore', 'repeat', 'LINE', 
                            'SINE', 'DNA', 'LTR', 'SINE', 'Alu', 'AluS', 
                            'AluJ', 'AluY', 'MIR', 'all'),
-                    min.chr.size=12000)
+                    min.chr.size=12000, end.exclude=1000)
 # feats.gr is a GRanges object of features of the given type with
 # metadata columns meth, cpgs and cov telling the average methylation,
 # the number of cpgs in each range and the average coverage of those cpgs.
@@ -169,14 +169,12 @@ permute <- function(feats.gr, bp.gr, all.bs, n=1000,
   # only sample from chroms at least <min.chr.size>
   lengths <- seqlengths(bp.gr)[seqlengths(bp.gr) >=
                                min.chr.size]
-  lengths <- lengths - 2000
-  breaks <- cumsum(as.numeric(lengths)) /
-              sum(as.numeric(lengths))
+  breaks <- cumsum(as.numeric(lengths-(end.exclude*2))) /
+              sum(as.numeric(lengths-(end.exclude*2)))
   names(breaks) <- names(lengths)
 
   sizes <- bp.gr$size
   num <- length(sizes)
-  tot.size <- sum(sizes)
 
   rand_regions <- data.frame(chr=character(),
                              start=numeric(0),
@@ -197,10 +195,10 @@ permute <- function(feats.gr, bp.gr, all.bs, n=1000,
   rand_regions$end <- as.numeric(rand_regions$end)
   rand.gr <- makeGRangesFromDataFrame(rand_regions)
 
-  rand.mean.meth <- rep(0,n)
-  rand.mean.cov <- rep(0,n)
-  rand.tot.cpgs <- rep(0,n)
-  rand.per.cov <- rep(0,n)
+  rand <- data.frame(mean.meth=rep(0,n),
+                     mean.cov=rep(0,n),
+	             tot.cpgs=rep(0,n),
+                     per.cov=rep(0,n))
 
   if(type=='all') {
     meth <- getMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
@@ -208,9 +206,9 @@ permute <- function(feats.gr, bp.gr, all.bs, n=1000,
 
     # Get means in groups by the number of regions in each group
     for(i in 1:n) {
-      rand.mean.meth[i] <- mean(unlist(meth[((i-1)*num+1):(i*num)]))
-      rand.mean.cov[i] <- mean(unlist(cov[((i-1)*num+1):(i*num)]))
-      rand.tot.cpgs[i] <- length(unlist(cov[((i-1)*num+1):(i*num)]))
+      rand$mean.meth[i] <- mean(unlist(meth[((i-1)*num+1):(i*num)]))
+      rand$mean.cov[i] <- mean(unlist(cov[((i-1)*num+1):(i*num)]))
+      rand$tot.cpgs[i] <- length(unlist(cov[((i-1)*num+1):(i*num)]))
     }
 
     # See how many of these permutations have methylation as low as
@@ -218,29 +216,43 @@ permute <- function(feats.gr, bp.gr, all.bs, n=1000,
     bp.w.av.meth <- weighted.mean(bp.gr$meth, bp.gr$cpgs)
     bp.w.av.cov <- weighted.mean(bp.gr$cov, bp.gr$cpgs)
 
+    ######Report p-values############
     cat('Permutation p-values:\n')
-    cat('Methylation:\t',  sum(rand.mean.meth < bp.w.av.meth)/n, '\n')
-    cat('Coverage: \t', sum(rand.mean.cov < bp.w.av.cov)/n, '\n')
-    cat('CpG count: \t', sum(rand.tot.cpgs < sum(bp.gr$cpgs)), '\n')
+    cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth)/n, '\n')
+    cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov)/n, '\n')
+    cat('CpG count: \t', sum(rand$tot.cpgs < sum(bp.gr$cpgs)), '\n')
 
   } else {
+
+    tot.size <- sum(sizes)
+    feat.in.bp <- subsetByOverlaps(feat.gr, bp.gr)
+
+    bp.w.av.meth <- weighted.mean(feat.in.bp$meth, feat.in.bp$cpgs)
+    bp.w.av.cov <- weighted.mean(feat.in.bp$cov, feat.in.bp$cpgs)
+    bp.cpgs <- sum(feat.in.bp$cpgs)
+    bp.cvg <- coverage(c(bp.gr, feat.in.bp))
+    bp.per.cov <- sum(unlist(lapply(bp.cvg[bp.cvg>1], runLength)))/tot.size
+
     for(i in 1:n) {
       feat.in.rand <- subsetByOverlaps(feat.gr, rand.gr[((i-1)*num+1):(i*num)])
-      meth <- getMeth(all.bs, regions=feat.in.rand, type='raw', what='perBase')
-      cov <- getCoverage(all.bs, regions=feat.in.rand, what='perBase')
+
+      rand$mean.meth[i] <- weighted.mean(feat.in.rand$meth, feat.in.rand$cpgs)
+      rand$mean.cov[i] <- weighted.mean(feat.in.rand$cov, feat.in.rand$cpgs)
+      rand$tot.cpgs[i] <- sum(feat.in.rand$cpgs)
+
       #get percentage of regions covered by features
       cvg <- coverage(c(rand.gr[((i-1)*num+1):(i*num)], feat.in.rand))
-      per <- sum(unlist(lapply(cvg[cvg>1], runLength)))/tot.size
-
-      rand.mean.meth[i] <- mean(unlist(meth), na.rm=T)
-      rand.mean.cov[i] <- mean(unlist(cov), na.rm=T)
-      rand.tot.cpgs[i] <- length(unlist(cov))
-      rand.per.cov[i] <- per
-      #########finish the above line#############
+      rand$per.cov[i] <- sum(unlist(lapply(cvg[cvg>1], runLength)))/tot.size
     }
+
     ######Report p-values############
-    bp.per.cov <- 
+    cat('Permutation p-values:\n')
+    cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth)/n, '\n')
+    cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov)/n, '\n')
+    cat('CpG count: \t', sum(rand$tot.cpgs < sum(bp.gr$cpgs))/n, '\n')
+    cat('Percent region covered: \t', sum(rand$per.cov < bp.per.cov)/n, '\n')
   }
   ####return dataframe of permutation values#########
+  rand
 }
 
