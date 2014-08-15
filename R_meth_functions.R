@@ -110,6 +110,15 @@ make_rep_gr <- function(rep_file, seqinfo) {
   sort(reps.gr)
 }
 
+make_gene_gr <- function(gene_file, seqinfo) {
+##########################################
+# Read in gene, exon, promoter info from
+# <gene_file> and make a GRanges object
+##########################################
+  
+
+
+
 add_meth_cpg_cov <- function(gr, bs.all) {
 ########################################################
 # Add metadata column of mean methylation per region,

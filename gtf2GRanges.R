@@ -1,10 +1,14 @@
 # Modified from Jiang (River) Li
+# nathan dot lazar at gmail dot com
 
 library(IRanges)
 library(GenomicRanges)
 
-#Return GRanges object of genes or exon information in gtf
-gtf2GRanges <- function(myfile="my.gff", seqinfo) {
+# Returns GRangesList object of genes, exons, introns, 
+# promoters of length <prom_size>, 3' UTR, 5' UTR
+# from information in gtf file
+
+gtf2GRanges <- function(myfile="my.gff", seqinfo, prom_size=1000) {
   gtf <- read.delim(myfile, header=FALSE)
   colnames(gtf) <- c("seqname", "source", "type", "start", "end", "score", "strand", "frame",      
                      "attributes")
@@ -46,20 +50,55 @@ gtf2GRanges <- function(myfile="my.gff", seqinfo) {
   exon_id[idx] <- 
     gsub(".*exon_id (.*?);.*", "\\1", gtf$attributes[idx])
 
-  gene.gr<-GRanges(seqnames=gtf$seqname,
-                   ranges=IRanges(gtf$start,gtf$end),
-                   strand=gtf$strand,
-		   source=gtf$source,
-		   type=gtf$type,
-                   gene_id=gene_id,
-                   transcript_id=transcript_id,
-                   exon_number=as.numeric(exon_number),
-		   gene_name=gene_name,
-		   gene_biotype=gene_biotype,
-		   transcript_name=transcript_name,
-		   exon_id=exon_id)
+  all.gr<-GRanges(seqnames=gtf$seqname,
+                  ranges=IRanges(gtf$start,gtf$end),
+                  strand=gtf$strand,
+                  source=gtf$source,
+	          type=gtf$type,
+                  gene_id=gene_id,
+                  transcript_id=transcript_id,
+                  exon_number=as.numeric(exon_number),
+	          gene_name=gene_name,
+	          gene_biotype=gene_biotype,
+	          transcript_name=transcript_name,
+	          exon_id=exon_id)
 
-  seqlevels(gene.gr) <- seqlevels(seqinfo)
-  seqlengths(gene.gr) <- seqlengths(seqinfo)
-  gene.gr
+  seqlevels(all.gr) <- seqlevels(seqinfo)
+  seqlengths(all.gr) <- seqlengths(seqinfo)
+
+  # Make gene GRanges object
+  ##########################
+  idx <- !grepl('pseudo', all.gr$source)
+  gene.gr.list <- split(all.gr[idx], all.gr$gene_id[idx])
+  gene.gr <- unlist(range(gene.gr.list))
+  gene.gr$gene_id <- names(gene.gr.list)
+
+  gene.tree <- GIntervalTree(gene.gr)     #used to subsetByOverlaps efficiently
+
+  # Make exon GRanges object
+  ##########################
+  exon.gr <- all.gr[all.gr$type=='exon' & !grepl('pseudo', all.gr$source)]
+
+  # Make intron GRanges object
+  ############################
+  intron.gr <- setdiff(gene.gr, exon.gr)
+  intron.gr <- intron.gr[start(intron.gr) < end(intron.gr)]
+
+  # Make promoter GRanges object
+  ##############################
+  promoter.gr <- promoters(gene.gr, upstream=prom_size,
+                           downstream=0)
+
+  # Make 3' UTR and 5' UTR GRanges objects
+  ########################################
+  # I had some difficulty with these. left out for now
+
+  gr <- list()
+  gr$gene <- gene.gr
+  gr$exon <- exon.gr
+  gr$intron <- intron.gr
+  gr$promoter <- promoter.gr
+#  gr$utr3 <- utr3.gr
+#  gr$utr5 <- utr5.gr
+  gr
 }
