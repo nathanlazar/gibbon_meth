@@ -1,13 +1,12 @@
 # nathan dot lazar at gmail dot com
 
-
-permute <- function(feats.gr, bp.gr, all.bs, n=1000,
+permute <- function(feat.gr, bp.gr, all.bs, n=1000,
                     type=c('gene', 'exon', 'intron', 'promoter', '3UTR',
                            '5UTR', 'CpGisl', 'CpGshore', 'repeat', 'LINE',
                            'SINE', 'DNA', 'LTR', 'SINE', 'Alu', 'AluS',
                            'AluJ', 'AluY', 'MIR', 'all'),
                     min.chr.size=12000, end.exclude=1000) {
-# feats.gr is a GRanges object of features of the given type with
+# feat.gr is a GRanges object of features of the given type with
 # metadata columns meth, cpgs and cov telling the average methylation,
 # the number of cpgs in each range and the average coverage of those cpgs.
 # bp.gr is a GRanges object of BP regions

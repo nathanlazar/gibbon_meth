@@ -38,11 +38,11 @@ seqinfo <- make_seqinfo(len_file)
 
 # Read in CpG data and make BSeq object with coverage over 4
 ############################################################
-make_bs_all(drive, 'NLE_Vok', seqinfo, 4)
+all.bs <- make_bs_all(drive, 'NLE_Vok', seqinfo, 4)
 
 #Measure methylation of CpGs with coverage of 4 or more
 ########################################################
-all.cpg.meth <- mean(getMeth(bs.all, type='raw', what='perBase'),
+all.cpg.meth <- mean(getMeth(all.bs, type='raw', what='perBase'),
                      na.rm=T)
 
 ############################
@@ -62,12 +62,12 @@ write.table(bp.bed, file='bp_regions.bed', quote=F, sep='\t',
 
 # Add mean methylation, number of CpGs and coverage
 # of sides of bp regions to GRanges object
-bp.lr.gr <- add_meth_cpg_cov(bp.lr.gr, bs.all)
+bp.lr.gr <- add_meth_cpg_cov(bp.lr.gr, all.bs)
 
 # Run permutation analysis to determine whether the breakpoint
 # regions have lower methylation or coverage than would be seen
 # in random regions
-bp.permute <- permute(bp.lr.gr, bp.lr.gr, bs.all, n=1000, type='all', 
+bp.permute <- permute(bp.lr.gr, bp.lr.gr, all.bs, n=1000, type='all', 
                       min.chr.size=12000, end.exclude=1000)
 
 ###############
@@ -78,9 +78,21 @@ gene.gr.list <- gtf2GRanges(gene_file, seqinfo, prom_size=1000)
 
 # Add methylation, number of CpGs and mean CpG coverage to each
 # of these GRanges objects
-gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, bs.all)
+gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, all.bs)
 
 # Run permutation analysis
+gene.permute <- permute(gene.gr.list$gene, bp.lr.gr, all.bs, 
+                        n=1000, type='gene', min.chr.size=12000,
+                        end.exclude=1000)
+exon.permute <- permute(gene.gr.list$exon, bp.lr.gr, all.bs, 
+                        n=1000, type='exon', min.chr.size=12000,
+                        end.exclude=1000)
+intron.permute <- permute(gene.gr.list$intron, bp.lr.gr, all.bs, 
+                          n=1000, type='intron', min.chr.size=12000,
+                          end.exclude=1000)
+promoter.permute <- permute(gene.gr.list$promoter, bp.lr.gr, all.bs, 
+                            n=1000, type='promoter', min.chr.size=12000,
+                            end.exclude=1000)
 
 
 #################
@@ -88,11 +100,11 @@ gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, bs.all)
 #################
 
 # Read in repmask data
-rep.gr <- make_rep_gr(rep_file, seqinfo(bs.all))
+rep.gr <- make_rep_gr(rep_file, seqinfo(all.bs))
 
 # Add mean methylation, number of CpGs and mean CpG
 # coverage to repeat GRanges object
-reps.gr <- add_meth_cpg_cov(reps.gr, bs.all)
+reps.gr <- add_meth_cpg_cov(reps.gr, all.bs)
 
 #####################
 # CpG island analysis
@@ -101,12 +113,12 @@ reps.gr <- add_meth_cpg_cov(reps.gr, bs.all)
 # Read in CpG island data
 cpg_island.gr <- read_cpg_island(cpg_island_file, seqinfo)
 
-cpg_shore.gr <- make_cpg_shore(cpg_island.gr, shore_size)
-
+cpg_shore.gr <- make_cpg_shore(cpg_island.gr, 1000)
 
 # Add mean methylation, number of CpGs and mean CpG
 # coverage to CpGisland GRanges object
-
+cpg_island.gr <- add_meth_cpg_cov(cpg_island.gr, all.bs)
+cpg_shore.gr <- add_meth_cpg_cov(cpg_shore.gr, all.bs)
 
 
 #Try some graphical model inference
@@ -166,8 +178,8 @@ rand.mean.covs <- rep(0,10000)
 rand.sd.covs <- rep(0,10000)
 for(i in 1:10000) {
   rands <- sample(1:20832153, 15032)
-  rand.meth <- getMeth(bs.all, type='raw')[rands]
-  rand.cov <- getCoverage(bs.all)[rands]
+  rand.meth <- getMeth(all.bs, type='raw')[rands]
+  rand.cov <- getCoverage(all.bs)[rands]
   rand.mean.meths[i] <- mean(rand.meth)
   rand.sd.meths[i] <- sd(rand.meth)
   rand.mean.covs[i] <- mean(rand.cov)
@@ -189,7 +201,7 @@ sum(rand.mean.covs > bp.w.av.cov)/10000
 
 #Make a list for sampling according to chrom lengths
 # only sample from chroms at least 12kb
-lengths <- seqlengths(bs.all)[seqlengths(bs.all) >= 12000]
+lengths <- seqlengths(all.bs)[seqlengths(all.bs) >= 12000]
 breaks <- cumsum(as.numeric(lengths)) / 
             sum(as.numeric(lengths))
 names(breaks) <- names(lengths)
@@ -211,8 +223,8 @@ for(i in 1:1000) {
 rand.gr <- GRanges(seqnames=rand_regions[,1],
                      ranges=IRanges(start=as.numeric(matrix(rand_regions[,2])),
                                     end=as.numeric(matrix(rand_regions[,3]))))
-meth <- getMeth(bs.all, regions=rand.gr, type='raw', what='perBase')
-cov <- getCoverage(bs.all, regions=rand.gr, what='perBase')
+meth <- getMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
+cov <- getCoverage(all.bs, regions=rand.gr, what='perBase')
 
 #Get means in grouped by the number of BP regions
 rand_mean_meth <- rep(0,1000)
@@ -232,11 +244,11 @@ sum(rand_mean_cov > bp.w.av.cov)/1000
 
 #CLASS I
 bp_class1.gr <- bp.lr.gr[bp.lr.gr$class=="Class_I"]
-bp_class1.gr$meth <- getMeth(bs.all, regions=bp_class1.gr,
+bp_class1.gr$meth <- getMeth(all.bs, regions=bp_class1.gr,
 		             type='raw', what='perRegion')
 #CLASS I region meth
 bp_class1.gr <- bp.lr.gr[bp.lr.gr$class=="Class_I"]
-bp_class1.gr$meth <- getMeth(bs.all, regions=bp_class1.gr,
+bp_class1.gr$meth <- getMeth(all.bs, regions=bp_class1.gr,
 		             type='raw', what='perRegion')
 
 ######################################
@@ -253,9 +265,9 @@ permute(bp.lr.gr, bp.lr.gr, all.bs, n=1000, type='all')
 #SINE
 #####
 sines <- reps.gr[grepl('SINE', reps.gr$family)]
-sines$meth <- getMeth(bs.all, regions=sines,
+sines$meth <- getMeth(all.bs, regions=sines,
 	              type='raw', what='perRegion')
-sine_cpgs <- getCoverage(bs.all, regions=sines,
+sine_cpgs <- getCoverage(all.bs, regions=sines,
 	                 what='perBase')
 sines$cpgs <- unlist(lapply(sine_cpgs, length))
 sines$cov <- unlist(lapply(sine_cpgs, mean, na.rm=T))
@@ -270,9 +282,9 @@ mean(sines_in_classI$meth, na.rm=T)
 
 #Mesure methylation in all Alu elements
 alu.gr <- reps.gr[reps.gr$family=='SINE/Alu']
-alu.gr$meth <- getMeth(bs.all, regions=alu.gr,
+alu.gr$meth <- getMeth(all.bs, regions=alu.gr,
 	               type='raw', what='perRegion')
-alu.gr$cpgs <- sapply(getMeth(bs.all, regions=alu.gr,
+alu.gr$cpgs <- sapply(getMeth(all.bs, regions=alu.gr,
 	                      type='raw', what='perBase'),
                       length)
 mean(alu.gr$meth, na.rm=T)
@@ -286,7 +298,7 @@ mean(aluY_in_bp$meth, na.rm=T)
 #Methylation of Alu in class I
 reps_in_classI <- subsetByOverlaps(reps.gr, bp_class1.gr)
 alu_in_classI <- reps_in_classI[reps_in_classI$family=='SINE/Alu']
-alu_in_classI$meth <- getMeth(bs.all, regions=alu_in_classI,
+alu_in_classI$meth <- getMeth(all.bs, regions=alu_in_classI,
 		              type='raw', what='perRegion')
 mean(alu_in_classI$meth, na.rm=T)
 
@@ -344,26 +356,26 @@ write_meth(bp_region.gr, 'bp_meth.txt')
 
 #Make bedgraph of methylation for viewing in IGV
 ################################################
-cpgs.out <- data.frame(seqnames(bs.all),
-                       start(bs.all),
-		       end(bs.all), 1)
+cpgs.out <- data.frame(seqnames(all.bs),
+                       start(all.bs),
+		       end(all.bs), 1)
 writeLines("track type=bedGraph name=Vok_CpGs description=center_label visibility=display_mode color=0,0,255 graphType=bar viewLimits=0:1 yLineOnOff=off", 'Vok_cpgs.bedgraph')
 write.table(cpgs.out, file='Vok_cpgs.bedgraph', append=T,
             row.names=F, col.names=F, quote=F, sep='\t')
 
-meth.out <- data.frame(seqnames(bs.all),
-                       start(bs.all),
-		       end(bs.all),
-		       getMeth(bs.all, type='raw'))
+meth.out <- data.frame(seqnames(all.bs),
+                       start(all.bs),
+		       end(all.bs),
+		       getMeth(all.bs, type='raw'))
 writeLines("track type=bedGraph name=Vok_Meth description=Vok_Meth visibility=display_mode color=0,0,255 graphType=bar viewLimits=0:1 yLineOnOff=off", 'Vok_meth.bedgraph')
 
 write.table(meth.out, file='Vok_meth.bedgraph', append=T,
             row.names=F, col.names=F, quote=F, sep='\t')
 
-cov.out <- data.frame(seqnames(bs.all),
-                      start(bs.all),
-                      end(bs.all),
-	              getCoverage(bs.all))
+cov.out <- data.frame(seqnames(all.bs),
+                      start(all.bs),
+                      end(all.bs),
+	              getCoverage(all.bs))
 writeLines("track type=bedGraph name=Vok_CpG_Cov description=CpG_Cov visibility=display_mode color=255,0,0 graphType=bar yLineOnOff=off", 'Vok_cov.bedgraph')
 
 write.table(cov.out, file='Vok_cov.bedgraph', append=T,
@@ -385,10 +397,10 @@ BAC_amp.gr <- GRanges(
   strand = Rle(BAC_amp$strand),
   BP = BAC_amp$BP,
   size = BAC_amp$size,
-  seqinfo = seqinfo(bs.all))
+  seqinfo = seqinfo(all.bs))
 BAC_amp.gr <- sort(BAC_amp.gr)
 
-BAC_amp.gr$meth <- getMeth(bs.all, regions=BAC_amp.gr,
+BAC_amp.gr$meth <- getMeth(all.bs, regions=BAC_amp.gr,
                            type='raw', what='perRegion')
 
 mean(BAC_amp.gr$meth[BAC_amp.gr$BP==0], na.rm=T)
@@ -396,7 +408,7 @@ mean(BAC_amp.gr$meth[BAC_amp.gr$BP==1], na.rm=T)
 wilcox.test(BAC_amp.gr$meth[BAC_amp.gr$BP==0], BAC_amp.gr$meth[BAC_amp.gr$BP==1])
   #This doesn't show significance
 
-BAC_meth.per_cpg <- getMeth(bs.all, regions=BAC_amp.gr,
+BAC_meth.per_cpg <- getMeth(all.bs, regions=BAC_amp.gr,
 		            type='raw', what='perBase')
 wilcox.test(unlist(BAC_meth.per_cpg[BAC_amp.gr$BP==0]),
 	unlist(BAC_meth.per_cpg[BAC_amp.gr$BP==1]))
@@ -417,18 +429,18 @@ mean(aluY_in_BAC_non$meth, na.rm=T)
 wilcox.test(aluY_in_BAC_bp$meth, aluY_in_BAC_non$meth)
 
 #Same but not taking the average of meth in each Alu
-alu_in_BAC_bp.per_cpg <- getMeth(bs.all,
+alu_in_BAC_bp.per_cpg <- getMeth(all.bs,
   alu_in_BAC_bp, type='raw', what='perBase')
-alu_in_BAC_non.per_cpg <- getMeth(bs.all,
+alu_in_BAC_non.per_cpg <- getMeth(all.bs,
   alu_in_BAC_non, type='raw', what='perBase')
 mean(unlist(alu_in_BAC_bp.per_cpg))
 mean(unlist(alu_in_BAC_non.per_cpg))
 wilcox.test(unlist(alu_in_BAC_bp.per_cpg),
             unlist(alu_in_BAC_non.per_cpg))
 
-aluY_in_BAC_bp.per_cpg <- getMeth(bs.all,
+aluY_in_BAC_bp.per_cpg <- getMeth(all.bs,
   aluY_in_BAC_bp, type='raw', what='perBase')
-aluY_in_BAC_non.per_cpg <- getMeth(bs.all,
+aluY_in_BAC_non.per_cpg <- getMeth(all.bs,
   aluY_in_BAC_non, type='raw', what='perBase')
 mean(unlist(aluY_in_BAC_bp.per_cpg))
 mean(unlist(aluY_in_BAC_non.per_cpg))
@@ -445,8 +457,8 @@ wilcox.test(unlist(aluY_in_BAC_bp.per_cpg),
 #Plot mean methylation by coverage
 ##################################
 cov_meth <- data.frame(cov=4:1000, meth=NA, cpgs=0)
-cnt <- function(i) length(getMeth(bs.all, type='raw')[getCoverage(bs.all)==i])
-meth <- function(i) mean(getMeth(bs.all, type='raw')[getCoverage(bs.all)==i])
+cnt <- function(i) length(getMeth(all.bs, type='raw')[getCoverage(all.bs)==i])
+meth <- function(i) mean(getMeth(all.bs, type='raw')[getCoverage(all.bs)==i])
 cov_meth$cpgs <- unlist(lapply(cov_meth$cov, cnt))
 cov_meth$meth <- unlist(lapply(cov_meth$cov, meth))
 write.table(cov_meth, file='cov_meth.txt', quote=F,
@@ -466,8 +478,8 @@ dev.off()
 
 
 cov_meth2 <- data.frame(cov=4:1000, meth=NA, cpgs=0)
-cnt <- function(i) length(getMeth(bs.all, type='raw')[getCoverage(bs.all)>=i])
-meth <- function(i) mean(getMeth(bs.all, type='raw')[getCoverage(bs.all)>=i])
+cnt <- function(i) length(getMeth(all.bs, type='raw')[getCoverage(all.bs)>=i])
+meth <- function(i) mean(getMeth(all.bs, type='raw')[getCoverage(all.bs)>=i])
 cov_meth2$cpgs <- unlist(lapply(cov_meth2$cov, cnt))
 cov_meth2$meth <- unlist(lapply(cov_meth2$cov, meth))
 write.table(cov_meth2, file='cov_meth2.txt', quote=F,
@@ -489,8 +501,8 @@ dev.off()
 ##########
 #Find CpGs in breakpoint regions
 ################################
-findOverlaps(bp_region.gr, bs.all,ignore.strand=T)
-cpg_in_bp <- bs.all[bs.all %within% bp_region.gr]
+findOverlaps(bp_region.gr, all.bs,ignore.strand=T)
+cpg_in_bp <- all.bs[all.bs %within% bp_region.gr]
 
 
 
