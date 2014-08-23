@@ -1,11 +1,14 @@
 # nathan dot lazar at gmail dot com
 
-permute <- function(feat.gr, bp.gr, all.bs, n=1000,
-                    type=c('gene', 'exon', 'intron', 'promoter', '3UTR',
-                           '5UTR', 'CpGisl', 'CpGshore', 'repeat', 'LINE',
-                           'SINE', 'DNA', 'LTR', 'SINE', 'Alu', 'AluS',
-                           'AluJ', 'AluY', 'MIR', 'all'),
-                    min.chr.size=12000, end.exclude=1000) {
+par_permute <- function(feat.gr, bp.gr, all.bs, n=1000,
+                        type=c('gene', 'exon', 'intron', 'promoter', '3UTR',
+                               '5UTR', 'CpGisl', 'CpGshore', 'repeat', 'LINE',
+                               'SINE', 'DNA', 'LTR', 'SINE', 'Alu', 'AluS',
+                               'AluJ', 'AluY', 'MIR', 'all'),
+                        min.chr.size=12000, end.exclude=1000) {
+# This function performs the same function as permute, but utilizes parallel 
+# processing through HTCondor
+$
 # feat.gr is a GRanges object of features of the given type with
 # metadata columns meth, cpgs and cov telling the average methylation,
 # the number of cpgs in each range and the average coverage of those cpgs.
@@ -24,6 +27,12 @@ permute <- function(feat.gr, bp.gr, all.bs, n=1000,
 # If type=='all' then all CpGs in the random regions are measured
 # Prints out p-values and returns dataframe of mean methylation,
 # mean coverage and area covered (if type is a feature)
+
+  # Save the objects feat.gr, bp.gr and all.bs to a file that can be read by
+  # all workers
+#@@@@@@@@@@@@@ HERE @@@@@@@@@@@@@@@@@@@#
+
+  save(feat.gr, bp.gr, all.bs, file='parapermute.data')
 
 
   # Make a list for sampling according to chrom lengths
@@ -64,8 +73,8 @@ permute <- function(feat.gr, bp.gr, all.bs, n=1000,
 
 
   if(type=='all') {
-    meth <- mcgetMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
-    cov <- mcgetCoverage(all.bs, regions=rand.gr, what='perBase')
+    meth <- getMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
+    cov <- getCoverage(all.bs, regions=rand.gr, what='perBase')
 
     # Get means in groups by the number of regions in each group
     for(i in 1:n) {

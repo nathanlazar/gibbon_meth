@@ -4,13 +4,14 @@
 
 #R script to colate data on CpG methylation from cpg10 evidence files
 
-#Usage Rscript ./bin/full_R_analysis.R 
-#  <file of chromosome lengths>
-#  <sorted and tabulated cpg evidence file>
-#  <breakpoint region file>
-#  <gene_file>
-#  <repmask file>
-#  <cpg_island_file>
+# Usage:
+# Rscript ./bin/full_R_analysis.R 
+#   <file of chromosome lengths>
+#   <sorted and tabulated cpg evidence file>
+#   <breakpoint region file>
+#   <gene_file>
+#   <repmask file>
+#   <cpg_island_file>
 
 # Example: 
 # Rscript ./bin/full_R_analysis.R 
@@ -38,11 +39,11 @@ seqinfo <- make_seqinfo(len_file, 'NomLeu1.0')
 
 # Read in CpG data and make BSeq object with coverage over 4
 ############################################################
-all.bs <- make_bs_all(drive, 'NLE_Vok', seqinfo, 4)
+all.bs <- make_all_bs(drive, 'NLE_Vok', seqinfo, 4)
 
 #Measure methylation of CpGs with coverage of 4 or more
 ########################################################
-all.cpg.meth <- mean(getMeth(all.bs, type='raw', what='perBase'),
+all.cpg.meth <- mean(mcgetMeth(all.bs, type='raw', what='perBase'),
                      na.rm=T)
 
 ############################
@@ -188,8 +189,8 @@ rand.mean.covs <- rep(0,10000)
 rand.sd.covs <- rep(0,10000)
 for(i in 1:10000) {
   rands <- sample(1:20832153, 15032)
-  rand.meth <- getMeth(all.bs, type='raw')[rands]
-  rand.cov <- getCoverage(all.bs)[rands]
+  rand.meth <- mcgetMeth(all.bs, type='raw')[rands]
+  rand.cov <- mcgetCoverage(all.bs)[rands]
   rand.mean.meths[i] <- mean(rand.meth)
   rand.sd.meths[i] <- sd(rand.meth)
   rand.mean.covs[i] <- mean(rand.cov)
@@ -233,8 +234,8 @@ for(i in 1:1000) {
 rand.gr <- GRanges(seqnames=rand_regions[,1],
                      ranges=IRanges(start=as.numeric(matrix(rand_regions[,2])),
                                     end=as.numeric(matrix(rand_regions[,3]))))
-meth <- getMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
-cov <- getCoverage(all.bs, regions=rand.gr, what='perBase')
+meth <- mcgetMeth(all.bs, regions=rand.gr, type='raw', what='perBase')
+cov <- mcgetCoverage(all.bs, regions=rand.gr, what='perBase')
 
 #Get means in grouped by the number of BP regions
 rand_mean_meth <- rep(0,1000)
@@ -254,11 +255,11 @@ sum(rand_mean_cov > bp.w.av.cov)/1000
 
 #CLASS I
 bp_class1.gr <- bp.lr.gr[bp.lr.gr$class=="Class_I"]
-bp_class1.gr$meth <- getMeth(all.bs, regions=bp_class1.gr,
+bp_class1.gr$meth <- mcgetMeth(all.bs, regions=bp_class1.gr,
 		             type='raw', what='perRegion')
 #CLASS I region meth
 bp_class1.gr <- bp.lr.gr[bp.lr.gr$class=="Class_I"]
-bp_class1.gr$meth <- getMeth(all.bs, regions=bp_class1.gr,
+bp_class1.gr$meth <- mcgetMeth(all.bs, regions=bp_class1.gr,
 		             type='raw', what='perRegion')
 
 ######################################
@@ -275,9 +276,9 @@ permute(bp.lr.gr, bp.lr.gr, all.bs, n=1000, type='all')
 #SINE
 #####
 sines <- reps.gr[grepl('SINE', reps.gr$family)]
-sines$meth <- getMeth(all.bs, regions=sines,
+sines$meth <- mcgetMeth(all.bs, regions=sines,
 	              type='raw', what='perRegion')
-sine_cpgs <- getCoverage(all.bs, regions=sines,
+sine_cpgs <- mcgetCoverage(all.bs, regions=sines,
 	                 what='perBase')
 sines$cpgs <- unlist(lapply(sine_cpgs, length))
 sines$cov <- unlist(lapply(sine_cpgs, mean, na.rm=T))
@@ -292,9 +293,9 @@ mean(sines_in_classI$meth, na.rm=T)
 
 #Mesure methylation in all Alu elements
 alu.gr <- reps.gr[reps.gr$family=='SINE/Alu']
-alu.gr$meth <- getMeth(all.bs, regions=alu.gr,
+alu.gr$meth <- mcgetMeth(all.bs, regions=alu.gr,
 	               type='raw', what='perRegion')
-alu.gr$cpgs <- sapply(getMeth(all.bs, regions=alu.gr,
+alu.gr$cpgs <- sapply(mcgetMeth(all.bs, regions=alu.gr,
 	                      type='raw', what='perBase'),
                       length)
 mean(alu.gr$meth, na.rm=T)
@@ -308,7 +309,7 @@ mean(aluY_in_bp$meth, na.rm=T)
 #Methylation of Alu in class I
 reps_in_classI <- subsetByOverlaps(reps.gr, bp_class1.gr)
 alu_in_classI <- reps_in_classI[reps_in_classI$family=='SINE/Alu']
-alu_in_classI$meth <- getMeth(all.bs, regions=alu_in_classI,
+alu_in_classI$meth <- mcgetMeth(all.bs, regions=alu_in_classI,
 		              type='raw', what='perRegion')
 mean(alu_in_classI$meth, na.rm=T)
 
@@ -376,7 +377,7 @@ write.table(cpgs.out, file='Vok_cpgs.bedgraph', append=T,
 meth.out <- data.frame(seqnames(all.bs),
                        start(all.bs),
 		       end(all.bs),
-		       getMeth(all.bs, type='raw'))
+		       mcgetMeth(all.bs, type='raw'))
 writeLines("track type=bedGraph name=Vok_Meth description=Vok_Meth visibility=display_mode color=0,0,255 graphType=bar viewLimits=0:1 yLineOnOff=off", 'Vok_meth.bedgraph')
 
 write.table(meth.out, file='Vok_meth.bedgraph', append=T,
@@ -385,7 +386,7 @@ write.table(meth.out, file='Vok_meth.bedgraph', append=T,
 cov.out <- data.frame(seqnames(all.bs),
                       start(all.bs),
                       end(all.bs),
-	              getCoverage(all.bs))
+	              mcgetCoverage(all.bs))
 writeLines("track type=bedGraph name=Vok_CpG_Cov description=CpG_Cov visibility=display_mode color=255,0,0 graphType=bar yLineOnOff=off", 'Vok_cov.bedgraph')
 
 write.table(cov.out, file='Vok_cov.bedgraph', append=T,
@@ -410,7 +411,7 @@ BAC_amp.gr <- GRanges(
   seqinfo = seqinfo(all.bs))
 BAC_amp.gr <- sort(BAC_amp.gr)
 
-BAC_amp.gr$meth <- getMeth(all.bs, regions=BAC_amp.gr,
+BAC_amp.gr$meth <- mcgetMeth(all.bs, regions=BAC_amp.gr,
                            type='raw', what='perRegion')
 
 mean(BAC_amp.gr$meth[BAC_amp.gr$BP==0], na.rm=T)
@@ -418,7 +419,7 @@ mean(BAC_amp.gr$meth[BAC_amp.gr$BP==1], na.rm=T)
 wilcox.test(BAC_amp.gr$meth[BAC_amp.gr$BP==0], BAC_amp.gr$meth[BAC_amp.gr$BP==1])
   #This doesn't show significance
 
-BAC_meth.per_cpg <- getMeth(all.bs, regions=BAC_amp.gr,
+BAC_meth.per_cpg <- mcgetMeth(all.bs, regions=BAC_amp.gr,
 		            type='raw', what='perBase')
 wilcox.test(unlist(BAC_meth.per_cpg[BAC_amp.gr$BP==0]),
 	unlist(BAC_meth.per_cpg[BAC_amp.gr$BP==1]))
@@ -439,18 +440,18 @@ mean(aluY_in_BAC_non$meth, na.rm=T)
 wilcox.test(aluY_in_BAC_bp$meth, aluY_in_BAC_non$meth)
 
 #Same but not taking the average of meth in each Alu
-alu_in_BAC_bp.per_cpg <- getMeth(all.bs,
+alu_in_BAC_bp.per_cpg <- mcgetMeth(all.bs,
   alu_in_BAC_bp, type='raw', what='perBase')
-alu_in_BAC_non.per_cpg <- getMeth(all.bs,
+alu_in_BAC_non.per_cpg <- mcgetMeth(all.bs,
   alu_in_BAC_non, type='raw', what='perBase')
 mean(unlist(alu_in_BAC_bp.per_cpg))
 mean(unlist(alu_in_BAC_non.per_cpg))
 wilcox.test(unlist(alu_in_BAC_bp.per_cpg),
             unlist(alu_in_BAC_non.per_cpg))
 
-aluY_in_BAC_bp.per_cpg <- getMeth(all.bs,
+aluY_in_BAC_bp.per_cpg <- mcgetMeth(all.bs,
   aluY_in_BAC_bp, type='raw', what='perBase')
-aluY_in_BAC_non.per_cpg <- getMeth(all.bs,
+aluY_in_BAC_non.per_cpg <- mcgetMeth(all.bs,
   aluY_in_BAC_non, type='raw', what='perBase')
 mean(unlist(aluY_in_BAC_bp.per_cpg))
 mean(unlist(aluY_in_BAC_non.per_cpg))
@@ -467,8 +468,8 @@ wilcox.test(unlist(aluY_in_BAC_bp.per_cpg),
 #Plot mean methylation by coverage
 ##################################
 cov_meth <- data.frame(cov=4:1000, meth=NA, cpgs=0)
-cnt <- function(i) length(getMeth(all.bs, type='raw')[getCoverage(all.bs)==i])
-meth <- function(i) mean(getMeth(all.bs, type='raw')[getCoverage(all.bs)==i])
+cnt <- function(i) length(mcgetMeth(all.bs, type='raw')[mcgetCoverage(all.bs)==i])
+meth <- function(i) mean(mcgetMeth(all.bs, type='raw')[mcgetCoverage(all.bs)==i])
 cov_meth$cpgs <- unlist(lapply(cov_meth$cov, cnt))
 cov_meth$meth <- unlist(lapply(cov_meth$cov, meth))
 write.table(cov_meth, file='cov_meth.txt', quote=F,
@@ -488,8 +489,8 @@ dev.off()
 
 
 cov_meth2 <- data.frame(cov=4:1000, meth=NA, cpgs=0)
-cnt <- function(i) length(getMeth(all.bs, type='raw')[getCoverage(all.bs)>=i])
-meth <- function(i) mean(getMeth(all.bs, type='raw')[getCoverage(all.bs)>=i])
+cnt <- function(i) length(mcgetMeth(all.bs, type='raw')[mcgetCoverage(all.bs)>=i])
+meth <- function(i) mean(mcgetMeth(all.bs, type='raw')[mcgetCoverage(all.bs)>=i])
 cov_meth2$cpgs <- unlist(lapply(cov_meth2$cov, cnt))
 cov_meth2$meth <- unlist(lapply(cov_meth2$cov, meth))
 write.table(cov_meth2, file='cov_meth2.txt', quote=F,

@@ -2,11 +2,15 @@
 # nathan dot lazar at gmail dot com
 
 library(bsseq)
+library(parallel)
 
 dir <- '~/gibbon_meth/'
 
 source(paste0(dir, 'make_seqinfo.R'))
-source(paste0(dir, 'make_bs_all.R'))
+source(paste0(dir, 'mcread.bsmooth.R'))
+source(paste0(dir, 'mcgetMeth.R'))
+source(paste0(dir, 'mcgetCoverage.R'))
+source(paste0(dir, 'make_all_bs.R'))
 source(paste0(dir, 'read_bp.R'))
 source(paste0(dir, 'read_cpg_island.R'))
 source(paste0(dir, 'make_cpg_shore.R'))

@@ -1,0 +1,66 @@
+#!/usr/bin/env Rscript
+
+# nathan dot lazar at gmail dot com
+
+# Small R script to be used in parallel with Condor when reading in BSseq files
+
+# Usage: 
+# Rscript ./par_read.bsmooth.file.R 
+#   <file_list.dat>
+#   <file_num>
+
+# Example:
+# Rscript ./par_read.bsmooth.file.R
+#   /mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/allChrFiles.dat
+#   1
+
+arg <- commandArgs(TRUE)
+file_list <- args[1]
+file_num <- args[2]
+
+keepCycle = FALSE
+keepFilt = FALSE
+columnHeaders <- c("ref", "off", "strand", "Mstr", "Mcy", "Ustr", "Ucy",
+                   "filt_cycle", "filt_readlen", "filt_allele", "filt_mapq", "filt_baseq")
+
+what0 <- replicate(length(columnHeaders), character(0))
+names(what0) <- columnHeaders
+int <- c(which(columnHeaders %in% c("off", "Mcy", "Ucy")), grep("^filt", columnHeaders))
+what0[int] <- replicate(length(int), integer(0))
+
+if(!keepCycle)
+    what0[c("Mcy", "Ucy")] <- replicate(2, NULL)
+if(!keepFilt)
+    what0[grep("^filt", names(what0))] <- replicate(length(grep("^filt", names(what0))), NULL)
+
+load(file_list)  #Creates allChrFiles list
+file <- file_list[file_num]
+
+    #
+
+outList <- lapply(allChrFiles, function(thisfile) {
+    if(verbose)
+        cat(sprintf("[read.bsmoothDirRaw] Reading '%s'\n", thisfile))
+    if(grepl("\\.gz$", thisfile))
+con <- gzfile(thisfile)
+    else
+        con <- file(thisfile)
+
+
+ out <- scan(con, skip = header, what = what0, sep = "\t",
+             quote = "", na.strings = "NA", quiet = TRUE)
+        close(con)
+        out
+    })
+
+
+
+
+
+
+    dir <- normalizePath(dir)
+    inpattern <- "\\.cpg\\.tsv(|\\.gz)$"
+
+seqnames <- sub(inpattern, "", basename(allChrFiles))
+
+
