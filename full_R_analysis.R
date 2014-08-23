@@ -15,8 +15,8 @@
 # Example: 
 # Rscript ./bin/full_R_analysis.R 
 #   ~/VOK_BS_GENOME/NomLeu1.0_lengths.txt
-#   <> 
-#   <> 
+#   ~/VOK_BS_GENOME/ALIGN/ALL/cpg10
+#   ~/VOK_BS_GENOME/NomLeu1.0_bp_clean.txt
 #   ~/VOK_BS_GENOME/Nomascus_leucogenys.Nleu1.0.70.fixed.gtf
 #   ~/GIBBON_METH/NOMLEU1/features/gibbon_cpgislands.gff
 
@@ -34,7 +34,7 @@ source('~/gibbon_meth/R_meth_functions.R')
 
 # Read in lengths of chromsomes and make seqinfo object
 #######################################################
-seqinfo <- make_seqinfo(len_file)
+seqinfo <- make_seqinfo(len_file, 'NomLeu1.0')
 
 # Read in CpG data and make BSeq object with coverage over 4
 ############################################################
@@ -50,7 +50,7 @@ all.cpg.meth <- mean(getMeth(all.bs, type='raw', what='perBase'),
 ############################
 
 # Read in Breakpoint region data and make GRanges object
-bp.gr <- read_bp(bp_file)
+bp.gr <- read_bp(bp_file, seqinfo)
 
 # Make GRanges object of 10kb regions on each side of breaks
 bp.lr.gr <- make_lr_bp(bp.gr, 10000)
@@ -81,19 +81,9 @@ gene.gr.list <- gtf2GRanges(gene_file, seqinfo, prom_size=1000)
 gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, all.bs)
 
 # Run permutation analysis
-gene.permute <- permute(gene.gr.list$gene, bp.lr.gr, all.bs, 
-                        n=1000, type='gene', min.chr.size=12000,
-                        end.exclude=1000)
-exon.permute <- permute(gene.gr.list$exon, bp.lr.gr, all.bs, 
-                        n=1000, type='exon', min.chr.size=12000,
-                        end.exclude=1000)
-intron.permute <- permute(gene.gr.list$intron, bp.lr.gr, all.bs, 
-                          n=1000, type='intron', min.chr.size=12000,
-                          end.exclude=1000)
-promoter.permute <- permute(gene.gr.list$promoter, bp.lr.gr, all.bs, 
-                            n=1000, type='promoter', min.chr.size=12000,
+gene.permute.list <- lapply(gene.gr.list, permute, bp.lr.gr, all.bs, n=1000, 
+                            type='gene', min.chr.size=12000,
                             end.exclude=1000)
-
 
 #################
 # Repeat analysis
@@ -104,7 +94,27 @@ rep.gr <- make_rep_gr(rep_file, seqinfo(all.bs))
 
 # Add mean methylation, number of CpGs and mean CpG
 # coverage to repeat GRanges object
-reps.gr <- add_meth_cpg_cov(reps.gr, all.bs)
+rep.gr <- add_meth_cpg_cov(rep.gr, all.bs)
+
+# All repeat permutation analysis
+rep.permute <- permute(rep.gr, bp.lr.gr, all.bs, n=1000,
+                       type='repeat', min.chr.size=12000,
+                       end.exclude=1000)
+
+# Run permutation analysis on major repeat classes 
+# LINE, SINE, DNA, LTR, Satellite
+
+rep.gr.list <- list()
+rep.gr.list$LINE <- rep.gr[grepl('LINE', rep.gr$rep_family)]
+rep.gr.list$SINE <- rep.gr[grepl('SINE', rep.gr$rep_family)]
+rep.gr.list$DNA <- rep.gr[grepl('DNA', rep.gr$rep_family)]
+rep.gr.list$LTR <- rep.gr[grepl('LTR', rep.gr$rep_family)]
+rep.gr.list$Satellite <- rep.gr[grepl('Satellite', rep.gr$rep_family)]
+
+rep.permute.list <- lapply(rep.gr.list, permute, bp.lr.gr, all.bs, n=1000,
+                           type='repeat', min.chr.size=12000,
+                           end.exclude=1000)
+
 
 #####################
 # CpG island analysis

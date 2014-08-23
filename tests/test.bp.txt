@@ -1,0 +1,5 @@
+BP_Name	Chr	start	end	size	Notes								
+NLE1_1	1	500	501	1	Class_1	Class_I							
+NLE2_1	2	1000	1050	50	Gibbon-specific_repeats	Class_II-a							
+NLE3_1	3	1	2	1	Start_scaffold	Class_II-b							
+NLE3_2	3	2999	3000	1	End_Scaffold	Class_II-b							

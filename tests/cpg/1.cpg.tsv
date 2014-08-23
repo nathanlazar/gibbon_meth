@@ -1,0 +1,14 @@
+ref	off	strand	Mstr	Mcy	Ustr	Ucy	filt_cycle	filt_readlen	filt_allele	filt_mapq	filt_baseq
+1	67	M		0		0	0	0	0	9	0
+1	84	M	ghAH8	5	FB	2	0	0	3	5	0
+1	158	M	gIhFF=AJF	8		0	0	0	0	2	0
+1	255	M	gFfJJ:IJ	7		0	0	0	0	1	1
+1	320	M	gFfGIJ	6	JD	1	0	0	0	1	2
+1	363	M	gfH@FDIID	8	g	1	0	0	0	0	1
+1	580	M	gggDF9GEJE	9	g	1	0	0	0	0	1
+1	597	M		0		0	0	0	0	18	0
+1	602	M		0		0	0	0	0	18	0
+1	672	M		0		0	0	0	0	11	0
+1	768	M		0		0	0	0	0	20	0
+1	938	M		0		0	0	0	0	16	0
+1	999	M		0		0	0	0	0	16	0

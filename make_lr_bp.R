@@ -30,22 +30,23 @@ make_lr_bp <- function(bp.gr, span) {
   # If regions were combined, concatenate metadata BP_name,
   # notes, class, side with a '-'
   cats <- which(lapply(tmp$mapping, length) > 1)
-  tmp.names <- as.character(tmp$BP_name)
-  tmp.names[cats] <-  paste(as.character(
-    bp.lr.gr$BP_name[unlist(tmp[cats]$mapping)]), collapse='-')
-  tmp$BP_name <- as.factor(tmp.names)
-  tmp.notes <- as.character(tmp$notes)
-  tmp.notes[cats] <-  paste(as.character(
-    bp.lr.gr$notes[unlist(tmp[cats]$mapping)]), collapse='-')
-  tmp$notes <- as.factor(tmp.notes)
-  tmp.notes <- as.character(tmp$notes)
-  tmp.notes[cats] <-  paste(as.character(
-    bp.lr.gr$notes[unlist(tmp[cats]$mapping)]), collapse='-')
-  tmp$notes <- as.factor(tmp.notes)
-  tmp.side <- as.character(tmp$side)
-  tmp.side[cats] <-  paste(as.character(
-    bp.lr.gr$side[unlist(tmp[cats]$mapping)]), collapse='-')
-  tmp$side <- as.factor(tmp.side)
-
+  if(length(cats) > 0) {
+    tmp.names <- as.character(tmp$BP_name)
+    tmp.names[cats] <-  paste(as.character(
+      bp.lr.gr$BP_name[unlist(tmp[cats]$mapping)]), collapse='-')
+    tmp$BP_name <- as.factor(tmp.names)
+    tmp.notes <- as.character(tmp$notes)
+    tmp.notes[cats] <-  paste(as.character(
+      bp.lr.gr$notes[unlist(tmp[cats]$mapping)]), collapse='-')
+    tmp$notes <- as.factor(tmp.notes)
+    tmp.notes <- as.character(tmp$notes)
+    tmp.notes[cats] <-  paste(as.character(
+      bp.lr.gr$notes[unlist(tmp[cats]$mapping)]), collapse='-')
+    tmp$notes <- as.factor(tmp.notes)
+    tmp.side <- as.character(tmp$side)
+    tmp.side[cats] <-  paste(as.character(
+      bp.lr.gr$side[unlist(tmp[cats]$mapping)]), collapse='-')
+    tmp$side <- as.factor(tmp.side)
+  }
   tmp
 }

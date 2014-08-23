@@ -15,8 +15,10 @@ make_rep_gr <- function(rep_file, seqinfo) {
   reps <- reps[grepl('chr', reps$chr)==F, ]
 
   reps.gr <- makeGRangesFromDataFrame(reps,
-               keep.extra.columns=T,
-               seqinfo=seqinfo)
+               keep.extra.columns=T)
+  seqlevels(reps.gr) <- seqlevels(seqinfo)
+  seqlengths(reps.gr) <- seqlengths(seqinfo)
+
   sort(reps.gr)
 }
 

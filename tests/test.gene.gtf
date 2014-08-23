@@ -1,0 +1,13 @@
+1	protein_coding	exon	10	20	.	-	.	 gene_id "gene_1"; transcript_id "trans_1"; exon_number "1"; gene_name "gene1"; gene_biotype "protein_coding"; transcript_name "trans1"; exon_id "gene1.1";
+1	protein_coding	exon	30	50	.	-	.	 gene_id "gene_1"; transcript_id "trans_1"; exon_number "2"; gene_name "gene1"; gene_biotype "protein_coding"; transcript_name "trans1"; exon_id "gene1.2";
+1	protein_coding	exon	80	100	.	-	.	 gene_id "gene_1"; transcript_id "trans_1"; exon_number "3"; gene_name "gene1"; gene_biotype "protein_coding"; transcript_name "trans1"; exon_id "gene1.3";
+1	protein_coding	start_codon	15	18	.	-	0	 gene_id "gene_1"; transcript_id "trans_1"; exon_number "1"; gene_name "gene1"; gene_biotype "protein_coding"; transcript_name "trans1";
+1	protein_coding	stop_codon	90	93	.	-	0	 gene_id "gene_1"; transcript_id "trans_1"; exon_number "1"; gene_name "gene1"; gene_biotype "protein_coding"; transcript_name "trans1";
+2	protein_coding	exon	110	120	.	-	.	 gene_id "gene_2"; transcript_id "trans_2"; exon_number "1"; gene_name "gene2"; gene_biotype "protein_coding"; transcript_name "trans2"; exon_id "gene2.1";
+2	protein_coding	exon	130	150	.	-	.	 gene_id "gene_2"; transcript_id "trans_2"; exon_number "2"; gene_name "gene2"; gene_biotype "protein_coding"; transcript_name "trans2"; exon_id "gene2.2";
+2	protein_coding	exon	180	200	.	-	.	 gene_id "gene_2"; transcript_id "trans_2"; exon_number "3"; gene_name "gene2"; gene_biotype "protein_coding"; transcript_name "trans2"; exon_id "gene2.3";
+2	protein_coding	start_codon	115	118	.	-	0	 gene_id "gene_2"; transcript_id "trans_2"; exon_number "1"; gene_name "gene2"; gene_biotype "protein_coding"; transcript_name "trans2";
+2	protein_coding	stop_codon	190	193	.	-	0	 gene_id "gene_2"; transcript_id "trans_2"; exon_number "1"; gene_name "gene2"; gene_biotype "protein_coding"; transcript_name "trans2";
+3	protein_coding	exon	1000	2000	.	-	.	 gene_id "gene_3"; transcript_id "trans_3"; exon_number "1"; gene_name "gene3"; gene_biotype "protein_coding"; transcript_name "trans3"; exon_id "gene3.1";
+3	protein_coding	start_codon	1115	1118	.	-	0	 gene_id "gene_3"; transcript_id "trans_3"; exon_number "1"; gene_name "gene3"; gene_biotype "protein_coding"; transcript_name "trans3";
+3	protein_coding	stop_codon	1990	1993	.	-	0	 gene_id "gene_3"; transcript_id "trans_3"; exon_number "1"; gene_name "gene3"; gene_biotype "protein_coding"; transcript_name "trans3";
