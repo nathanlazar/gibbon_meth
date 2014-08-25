@@ -1,0 +1,32 @@
+ID=$(Cluster).$(Process)
+dir=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME
+
+#Program
+executable=$(dir)/bin/align_all.sh
+
+#Arguments to the program
+#arguments=inputs/test_input.txt outputs/test.$(ID)  $$(Cpus)
+
+#stdout
+output=$(dir)/logs/align.stdout.$(ID)
+
+#stderr
+error=$(dir)/logs/align.stderr.$(ID)
+
+#Condor log file
+log=$(dir)/logs/condor_test.log.$(ID)
+
+#processor cores requested
+request_cpus = 16
+
+#Memory requested
+request_memory = 64 GB
+
+#Disk space
+request_disk = 20 GB
+
+#Queue the job
+queue 1
+
+#Send email: (this doesn't seem to work?)
+#notify_user = "nathan.lazar@gmail.com"

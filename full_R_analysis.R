@@ -16,7 +16,7 @@
 # Example: 
 # Rscript ./bin/full_R_analysis.R 
 #   ~/VOK_BS_GENOME/NomLeu1.0_lengths.txt
-#   ~/VOK_BS_GENOME/ALIGN/ALL/cpg10
+#   ~/VOK_BS_GENOME/ALIGN/ALL/cpg10gzip
 #   ~/VOK_BS_GENOME/NomLeu1.0_bp_clean.txt
 #   ~/VOK_BS_GENOME/Nomascus_leucogenys.Nleu1.0.70.fixed.gtf
 #   ~/GIBBON_METH/NOMLEU1/features/gibbon_cpgislands.gff
@@ -28,9 +28,8 @@ bp_file <- args[3]
 gene_file <- args[4]
 rep_file <- args[5]
 
-bac_file <- 'BAC_amp_on_NomLeu1.0.txt'
+#bac_file <- 'BAC_amp_on_NomLeu1.0.txt'
 
-library(bsseq)
 source('~/gibbon_meth/R_meth_functions.R')
 
 # Read in lengths of chromsomes and make seqinfo object

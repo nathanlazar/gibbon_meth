@@ -10,8 +10,9 @@ library(GenomicRanges)
 
 gtf2GRanges <- function(myfile="my.gff", seqinfo, prom_size=1000) {
   gtf <- read.delim(myfile, header=FALSE)
-  colnames(gtf) <- c("seqname", "source", "type", "start", "end", "score", "strand", "frame",      
+  colnames(gtf) <- c("chr", "source", "type", "start", "end", "score", "strand", "frame",      
                      "attributes")
+  gtf$chr <- paste0('chr', gtf$chr)
 
   len <- nrow(gtf)
 
@@ -50,7 +51,7 @@ gtf2GRanges <- function(myfile="my.gff", seqinfo, prom_size=1000) {
   exon_id[idx] <- 
     gsub(".*exon_id (.*?);.*", "\\1", gtf$attributes[idx])
 
-  all.gr<-GRanges(seqnames=gtf$seqname,
+  all.gr<-GRanges(seqnames=gtf$chr,
                   ranges=IRanges(gtf$start,gtf$end),
                   strand=gtf$strand,
                   source=gtf$source,
