@@ -1,20 +1,23 @@
 ID=$(Cluster).$(Process)
-dir=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME
+dir=/mnt/lustre1/users/lazar/GIBBONS
+
+should_transfer_files = IF_NEEDED
+when_to_transfer_output = ON_EXIT
 
 #Program
-executable=$(dir)/bin/align_all.sh
+executable=$(dir)/gibbon_meth/condor_par_rand.R
 
 #Arguments to the program
-#arguments=inputs/test_input.txt outputs/test.$(ID)  $$(Cpus)
+arguments=$(dir)/VOK_GENOME/par_permute.dat all 1000 $$(Cpus)
 
 #stdout
-output=$(dir)/logs/align.stdout.$(ID)
+output=$(dir)/VOK_GENOME/rand$(Process).txt
 
 #stderr
-error=$(dir)/logs/align.stderr.$(ID)
+error=$(dir)/VOK_GENOME/logs/rand.stderr.$(ID)
 
 #Condor log file
-log=$(dir)/logs/condor_test.log.$(ID)
+log=$(dir)/VOK_GENOME/logs/rand.log.$(ID)
 
 #processor cores requested
 request_cpus = 16
@@ -23,10 +26,10 @@ request_cpus = 16
 request_memory = 64 GB
 
 #Disk space
-request_disk = 20 GB
+request_disk = 2 GB
 
 #Queue the job
-queue 1
+queue 63
 
 #Send email: (this doesn't seem to work?)
 #notify_user = "nathan.lazar@gmail.com"

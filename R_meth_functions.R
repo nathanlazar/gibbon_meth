@@ -4,7 +4,8 @@
 library(bsseq)
 library(parallel)
 
-dir <- '~/gibbon_meth/'
+dir <- '/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/'
+#dir <- '~/gibbon_meth/'}
 
 source(paste0(dir, 'make_seqinfo.R'))
 source(paste0(dir, 'mcread.bsmooth.R'))

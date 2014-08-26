@@ -5,15 +5,18 @@
 # R script to be run by HTCondor in parallel 
 # that wraps par_rand.R
 
+.libPaths('/home/users/lazar/R/x86_64-redhat-linux-gnu-library/3.1/')
+
 library(foreach)
 library(doMC)
+library(bsseq)
+source('/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/R_meth_functions.R')
 
 # Usage:
 # Rscript ./condor_par_rand.R
 #   <file_of_R_data.dat>
 #   <type = all, gene, etc.>
 #   <size of ends of chroms to be excluded>
-#   <number of reps to be run on each node>
 #   <number of cores>
 
 # Example:
@@ -21,22 +24,22 @@ library(doMC)
 #   par_permute.dat
 #   all
 #   1000
-#   20
-#   24
+#   16
 
 args <- commandArgs(TRUE)
 #Load  feat.gr, bp.lr.gr, all.bs, breaks, sizes, lengths
 load(args[1])
 
 type <- args[2]
-n <- as.numeric(args[3])
-end.exclude <- as.numeric(args[4])
-registerDoMC(as.numeric(args[5]))
+end.exclude <- as.numeric(args[3])
+reps <- as.numeric(args[4])
+registerDoMC(reps)
 
 sizes <- bp.lr.gr$size
 
 rand <- par_rand(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type, reps)
+print(rand)
 
-# Save data to file (Condor will append numbers)
-save(rand, file='rand.dat')
+# Save data to file (doesn't work for some reason)
+#save(rand, file='rand.dat')
 

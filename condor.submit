@@ -1,0 +1,14 @@
+ID=$(Cluster).$(Process)
+dir=/mnt/lustre1/users/lazar/GIBBONS
+should_transfer_files = IF_NEEDED
+when_to_transfer_output = ON_EXIT
+executable=/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/condor_par_rand.R
+arguments=$(dir)/VOK_GENOME/par_permute.dat all 1000 $$(Cpus)
+output=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/permute$(Process).txt
+error=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/logs/permute.stderr.$(ID)
+log=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/logs/permute.log.$(ID)
+request_cpus=16
+request_memory=2 GB
+request_disk=2 GB
+queue 1
+

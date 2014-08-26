@@ -43,14 +43,21 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
 
   if(type=='all') {
 
-    # Create HTCondor script and call it
-    # Call Condor script
+    # Make condor submit script
+    make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
+      '/gibbon_meth/condor_par_rand.R',
+      c('$(dir)/VOK_GENOME/par_permute.dat', 'all', '1000', '$$(Cpus)'),
+      '/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME', 16, '2 GB', '2 GB', 63,
+      'condor.submit')
+
+    # Run condor script
+    system("condor_submit condor.submit")
 
     # Read in files written by HTCondor
     rand <- data.frame()
     for( i in 1:n/reps) {
-      fil <- paste0('rand', i, '.dat')
-      load(paste0('rand', i, '.dat')
+      fil <- paste0('rand', i, '.txt')
+      load(paste0('rand', i, '.txt')
       rand <- rbind(rand, 
     #par_rand(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type, reps)
 
