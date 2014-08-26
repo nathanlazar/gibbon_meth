@@ -55,11 +55,11 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
 
     # Read in files written by HTCondor
     rand <- data.frame()
-    for( i in 1:n/reps) {
-      fil <- paste0('rand', i, '.txt')
-      load(paste0('rand', i, '.txt')
-      rand <- rbind(rand, 
-    #par_rand(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type, reps)
+    for(i in 0:62) {
+      file <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/permute', i, '.txt')
+      results <- read.table(file, header=T)
+      rand <- rbind(rand, data.frame(results))
+    } 
 
     # See how many of these permutations have methylation as low as
     # the breakpoint regions
@@ -85,7 +85,23 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
     overlap <- intersect(bp.lr.gr, feat.in.bp, ignore.strand=T)
     bp.per.cov <- sum(width(overlap))/tot.size
 
-    par_rand(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type, n)
+    # Make condor submit script
+    make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
+      '/gibbon_meth/condor_par_rand.R',
+      c('$(dir)/VOK_GENOME/par_permute.dat', type, '1000', '$$(Cpus)'),
+      '/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME', 16, '2 GB', '2 GB', 63,
+      'condor.submit')
+
+    # Run condor script
+    system("condor_submit condor.submit")
+
+    # Read in files written by HTCondor
+    rand <- data.frame()
+    for(i in 0:62) {
+      file <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/permute', i, '.txt')
+      results <- read.table(file, header=T)
+      rand <- rbind(rand, data.frame(results))
+    }
 
     ######Report p-values############
     n <- length(!is.na(rand$mean.cov))
