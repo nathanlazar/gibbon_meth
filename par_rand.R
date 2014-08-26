@@ -9,6 +9,7 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
 # the features
 
   num <- length(sizes)
+  tot.size <- sum(sizes)
   nn <- reps*num
 
   rand_regions <- data.frame(chr=rep('', nn),
@@ -30,10 +31,10 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
   rand_regions$end <- as.numeric(rand_regions$end)
   rand.gr <- makeGRangesFromDataFrame(rand_regions)
 
-  rand <- data.frame(mean.meth=rep(0,n),
-                     mean.cov=rep(0,n),
-                     tot.cpgs=rep(0,n),
-                     per.cov=rep(0,n))
+  rand <- data.frame(mean.meth=rep(0,reps),
+                     mean.cov=rep(0,reps),
+                     tot.cpgs=rep(0,reps),
+                     per.cov=rep(0,reps))
 
   if(type=='all') {
     # Get methylation and coverage for all random regions at once
@@ -50,21 +51,18 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
       length(unlist(cov[((i-1)*num+1):(i*num)]))
     
   } else {
-
-    foreach(i=1:reps) %dopar% {
-      feat.in.rand <- subsetByOverlaps(feat.gr, rand.gr[((i-1)*num+1):(i*num)])
-
-      rand$mean.meth[i] <- weighted.mean(feat.in.rand$meth, feat.in.rand$cpgs,
-                                         na.rm=T)
-      rand$mean.cov[i] <- weighted.mean(feat.in.rand$cov, feat.in.rand$cpgs,
-                                        na.rm=T)
-      rand$tot.cpgs[i] <- sum(feat.in.rand$cpgs)
-
-      #get percentage of regions covered by features
-      rand.lap <- intersect(rand.gr[((i-1)*num+1):(i*num)], feat.in.rand,
-                            ignore.strand=T)
-      rand$per.cov[i] <- sum(width(rand.lap))/tot.size
-    }
+    
+    feat.in.rand <- foreach(i=1:reps) %dopar%
+      subsetByOverlaps(feat.gr, rand.gr[((i-1)*num+1):(i*num)])
+    rand$mean.meth <- foreach(i=1:reps) %dopar%
+      weighted.mean(feat.in.rand[[i]]$meth, feat.in.rand[[i]]$cpgs, na.rm=T)
+    rand$mean.cov <- foreach(i=1:reps) %dopar%
+      weighted.mean(feat.in.rand[[i]]$cov, feat.in.rand[[i]]$cpgs, na.rm=T)
+    rand$tot.cpgs <- foreach(i=1:reps) %dopar%
+      sum(feat.in.rand[[i]]$cpgs)
+    rand$per.cov <- foreach(i=1:reps) %dopar% {
+      sum(width(intersect(rand.gr[((i-1)*num+1):(i*num)], feat.in.rand[[i]],
+                          ignore.strand=T)))/tot.size}
   }
   rand
 }

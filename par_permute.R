@@ -8,7 +8,7 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
                         min.chr.size=12000, end.exclude=1000) {
 # This function performs the same function as permute, but utilizes parallel 
 # processing through HTCondor
-$
+#
 # feat.gr is a GRanges object of features of the given type with
 # metadata columns meth, cpgs and cov telling the average methylation,
 # the number of cpgs in each range and the average coverage of those cpgs.
@@ -43,8 +43,8 @@ $
 
   if(type=='all') {
 
-    # Create condor scripts and call them
-
+    # Create HTCondor script and call it
+    # Call Condor script
 
     # Read in files written by HTCondor
     rand <- data.frame()
