@@ -9,14 +9,14 @@ executable=/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/full_R_analysis.R
 
 arguments=$(dir)/VOK_GENOME/NomLeu1.0_lengths.txt $(dir)/VOK_GENOME/ALIGN/ALL/cpg10gzip $(dir)/VOK_GENOME/NomLeu1.0_bp_clean.txt $(dir)/VOK_GENOME/Nomascus_leucogenys.Nleu1.0.70.fixed.gtf $(dir)/VOK_GENOME/NomLeu1.0_repmask.txt $(dir)/VOK_GENOME/NomLeu1.0_cpg_islands.gff
 
-output=$(dir)/VOK_GENOME/full$(ID).out
+output=$(dir)/VOK_GENOME/full.$(ID).out
 
 error=$(dir)/VOK_GENOME/logs/full.stderr.$(ID)
 
 log=$(dir)/VOK_GENOME/logs/full.log.$(ID)
 
 request_cpus=16
-request_memory=10 GB
-request_disk=10 GB
+request_memory=20 GB
+request_disk=1 GB
 
 queue 1

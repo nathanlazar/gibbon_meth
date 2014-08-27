@@ -22,6 +22,8 @@
 #   ~/VOK_BS_GENOME/NomLeu1.0_repmask.txt
 #   ~/GIBBON_METH/NOMLEU1/features/gibbon_cpgislands.gff
 
+library(bsseq)
+
 args <- commandArgs(TRUE)
 len_file <- args[1]
 drive <- args[2]
@@ -32,7 +34,7 @@ cpg_isl_file <- args[6]
 
 #bac_file <- 'BAC_amp_on_NomLeu1.0.txt'
 
-source('~/gibbon_meth/R_meth_functions.R')
+source('/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/R_meth_functions.R')
 
 # Read in lengths of chromsomes and make seqinfo object
 #######################################################
@@ -69,8 +71,8 @@ bp.lr.gr <- add_meth_cpg_cov(bp.lr.gr, all.bs)
 # Run permutation analysis to determine whether the breakpoint
 # regions have lower methylation or coverage than would be seen
 # in random regions
-bp.permute <- permute(bp.lr.gr, bp.lr.gr, all.bs, n=1000, type='all', 
-                      min.chr.size=12000, end.exclude=1000)
+bp.permute <- par_permute(bp.lr.gr, bp.lr.gr, all.bs, n=1000, type='all', 
+                          min.chr.size=12000, end.exclude=1000)
 
 ###############
 # Gene analysis
@@ -82,10 +84,36 @@ gene.gr.list <- gtf2GRanges(gene_file, seqinfo, prom_size=1000)
 # of these GRanges objects
 gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, all.bs)
 
-# Run permutation analysis
-gene.permute.list <- lapply(gene.gr.list, permute, bp.lr.gr, all.bs, n=1000, 
-                            type='gene', min.chr.size=12000,
+# Run permutation analyses
+gene.permute <- par_permute(gene.gr.list$gene, bp.lr.gr, 
+		            all.bs, n=1000, type='gene', 
+                            min.chr.size=12000,
                             end.exclude=1000)
+exon.permute <- par_permute(gene.gr.list$exon, bp.lr.gr, 
+		            all.bs, n=1000, type='exon', 
+                            min.chr.size=12000,
+                            end.exclude=1000)
+intron.permute <- par_permute(gene.gr.list$intron, bp.lr.gr,
+                              all.bs, n=1000, type='intron',
+                              min.chr.size=12000,
+                              end.exclude=1000)
+promoter.permute <- par_permute(gene.gr.list$promoter, bp.lr.gr,
+                                all.bs, n=1000, type='promoter',
+                                min.chr.size=12000,
+                                end.exclude=1000)
+gene.permute.list <- list(gene.permute, exon.permute, 
+                          intron.permute, promoter.permute)
+
+#gene.permute.list <- lapply(gene.gr.list, par_permute, bp.lr.gr, 
+#		            all.bs, n=1000, 
+#                            type='gene', min.chr.size=12000,
+#                            end.exclude=1000)
+
+# Write out data
+#********************************************************************
+#save.image(file='/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/R.dat')
+#load('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/R.dat')
+#********************************************************************
 
 #################
 # Repeat analysis
@@ -99,9 +127,9 @@ rep.gr <- make_rep_gr(rep_file, seqinfo(all.bs))
 rep.gr <- add_meth_cpg_cov(rep.gr, all.bs)
 
 # All repeat permutation analysis
-rep.permute <- permute(rep.gr, bp.lr.gr, all.bs, n=1000,
-                       type='repeat', min.chr.size=12000,
-                       end.exclude=1000)
+rep.permute <- par_permute(rep.gr, bp.lr.gr, all.bs, n=1000,
+                           type='repeat', min.chr.size=12000,
+                           end.exclude=1000)
 
 # Run permutation analysis on major repeat classes 
 # LINE, SINE, DNA, LTR, Satellite
@@ -113,9 +141,74 @@ rep.gr.list$DNA <- rep.gr[grepl('DNA', rep.gr$rep_family)]
 rep.gr.list$LTR <- rep.gr[grepl('LTR', rep.gr$rep_family)]
 rep.gr.list$Satellite <- rep.gr[grepl('Satellite', rep.gr$rep_family)]
 
-rep.permute.list <- lapply(rep.gr.list, permute, bp.lr.gr, all.bs, n=1000,
-                           type='repeat', min.chr.size=12000,
-                           end.exclude=1000)
+LINE.permute <- par_permute(rep.gr.list$LINE, bp.lr.gr,
+                            all.bs, n=1000, type='LINE',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+SINE.permute <- par_permute(rep.gr.list$SINE, bp.lr.gr,
+                            all.bs, n=1000, type='SINE',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+DNA.permute <- par_permute(rep.gr.list$DNA, bp.lr.gr,
+                            all.bs, n=1000, type='DNA',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+LTR.permute <- par_permute(rep.gr.list$LTR, bp.lr.gr,
+                            all.bs, n=1000, type='LTR',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+Satellite.permute <- par_permute(rep.gr.list$Satellite, bp.lr.gr,
+                            all.bs, n=1000, type='Satellite',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+rep.permute.list <- list(LINE.permute, SINE.permute,
+                         DNA.permute, LTR.permute,
+                         Satellite.permute)
+
+#rep.permute.list <- lapply(rep.gr.list, par_permute, bp.lr.gr, 
+#                           all.bs, n=1000, type='repeat', 
+#                           min.chr.size=12000,
+#                           end.exclude=1000)
+
+# Run permutation analysis on major classes of SINEs
+# Alu, MIR, AluS, AluJ, AluY
+
+SINE.gr.list <- list()
+SINE.gr.list$Alu <- rep.gr[grepl('Alu', rep.gr$rep_class)]
+SINE.gr.list$MIR <- rep.gr[grepl('MIR', rep.gr$rep_class)]
+SINE.gr.list$AluS <- rep.gr[grepl('AluS', rep.gr$rep_class)]
+SINE.gr.list$AluJ <- rep.gr[grepl('AluJ', rep.gr$rep_class)]
+SINE.gr.list$AluY <- rep.gr[grepl('AluY', rep.gr$rep_class)] 
+
+#SINE.permute.list <- lapply(SINE.gr.list, par_permute, bp.lr.gr, 
+#                           all.bs, n=1000, type='repeat', 
+#                           min.chr.size=12000,
+#                           end.exclude=1000)
+
+Alu.permute <-  par_permute(SINE.gr.list$Alu, bp.lr.gr,
+                            all.bs, n=1000, type='Alu',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+MIR.permute <-  par_permute(SINE.gr.list$MIR, bp.lr.gr,
+                            all.bs, n=1000, type='MIR',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+AluS.permute <-  par_permute(SINE.gr.list$AluS, bp.lr.gr,
+                            all.bs, n=1000, type='AluS',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+AluJ.permute <-  par_permute(SINE.gr.list$AluJ, bp.lr.gr,
+                            all.bs, n=1000, type='AluJ',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+AluY.permute <-  par_permute(SINE.gr.list$AluY, bp.lr.gr,
+                            all.bs, n=1000, type='AluY',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+SINE.permute.list <- list(Alu.permute, MIR.permute,
+                          AluS.permute, AluJ.permute,
+                          AluY.permute)
+
 
 
 #####################
@@ -131,6 +224,15 @@ cpg_shore.gr <- make_cpg_shore(cpg_island.gr, 1000)
 # coverage to CpGisland GRanges object
 cpg_island.gr <- add_meth_cpg_cov(cpg_island.gr, all.bs)
 cpg_shore.gr <- add_meth_cpg_cov(cpg_shore.gr, all.bs)
+
+# Run permutation analysis
+cpg_island.permute <- par_permute(cpg_island.gr, bp.lr.gr,
+                                  all.bs, n=1000, type='CpGisl',
+                                  min.chr.size=12000, end.exclude=1000)
+cpg_shore.permute <- par_permute(cpg_shore.gr, bp.lr.gr,
+                                 all.bs, n=1000, type='CpGshore',
+                                 min.chr.size=12000, end.exclude=1000)
+
 
 # Look at differences between classes of breakpoints
 ####################################################

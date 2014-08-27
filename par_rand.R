@@ -33,7 +33,7 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
 
   rand <- data.frame(mean.meth=rep(0,reps),
                      mean.cov=rep(0,reps),
-                     tot.cpgs=rep(0,reps),
+                     cpgs.per.kb=rep(0,reps),
                      per.cov=rep(0,reps))
 
   if(type=='all') {
@@ -47,8 +47,8 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
       mean(unlist(meth[((i-1)*num+1):(i*num)]), na.rm=T)
     rand$mean.cov <- foreach(i=1:reps) %dopar% 
       mean(unlist(cov[((i-1)*num+1):(i*num)]), na.rm=T)
-    rand$tot.cpgs <- foreach(i=1:reps) %dopar%
-      length(unlist(cov[((i-1)*num+1):(i*num)]))
+    rand$cpgs.per.kb <- foreach(i=1:reps) %dopar% {
+      length(unlist(cov[((i-1)*num+1):(i*num)]))/tot.size*1000}
     
   } else {
     
@@ -58,8 +58,8 @@ par_rand <- function(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type,
       weighted.mean(feat.in.rand[[i]]$meth, feat.in.rand[[i]]$cpgs, na.rm=T)
     rand$mean.cov <- foreach(i=1:reps) %dopar%
       weighted.mean(feat.in.rand[[i]]$cov, feat.in.rand[[i]]$cpgs, na.rm=T)
-    rand$tot.cpgs <- foreach(i=1:reps) %dopar%
-      sum(feat.in.rand[[i]]$cpgs)
+    rand$cpgs.per.kb <- foreach(i=1:reps) %dopar% {
+      sum(feat.in.rand[[i]]$cpgs)/sum(width(feat.in.rand[[i]]))*1000}
     rand$per.cov <- foreach(i=1:reps) %dopar% {
       sum(width(intersect(rand.gr[((i-1)*num+1):(i*num)], feat.in.rand[[i]],
                           ignore.strand=T)))/tot.size}

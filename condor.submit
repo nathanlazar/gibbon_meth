@@ -10,5 +10,4 @@ log=/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/logs/permute.log.$(ID)
 request_cpus=16
 request_memory=2 GB
 request_disk=2 GB
-queue 1
-
+queue 63

@@ -41,74 +41,83 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
   #  to a file that can be read by all workers
   save(feat.gr, bp.lr.gr, all.bs, breaks, sizes, lengths, file='par_permute.dat')
 
+  # Make directory to store output
+  wdir <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/', type)
+  if(!file.exists(wdir)) {
+    dir.create(wdir)
+    dir.create(paste0(wdir, '/logs')) 
+  }
+
+  # Make condor submit script
+  cores <- 16
+  jobs <- 63
+  make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
+    '/gibbon_meth/condor_par_rand.R',
+    c('$(dir)/VOK_GENOME/par_permute.dat', type, '1000', '$$(Cpus)'),
+    wdir, cores, '2 GB', '2 GB', jobs, 'condor.submit')
+
+  # Run condor script
+  system("condor_submit condor.submit")
+
+  # If writing over output files, wait a minute so condor can create empty files
+  if(file.exists(paste0(wdir, '/permute.', as.character(jobs-1), '.txt')))
+    Sys.sleep(60) 
+
+  # Wait for these to be done (there's probably a better way to do this)
+  written.lines <- rep(0,jobs)
+  while(sum(written.lines) < (jobs*cores)) {
+    for(i in 1:jobs) {
+      if(written.lines[i] < cores) {
+        f <- paste0(wdir, '/permute.', as.character(i-1), '.txt')
+        written.lines[i] <- length(readLines(f))
+      }
+    }
+  Sys.sleep(5) #check every 5 seconds
+  }
+
+  # Read in files written by HTCondor
+  rand <- data.frame()
+  for(i in 0:(jobs-1)) {
+    file <- paste0(wdir, '/permute.', i, '.txt')
+    results <- read.table(file, header=T)
+    rand <- rbind(rand, data.frame(results))
+  }
+
+  tot.size <- sum(sizes)
+
   if(type=='all') {
-
-    # Make condor submit script
-    make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
-      '/gibbon_meth/condor_par_rand.R',
-      c('$(dir)/VOK_GENOME/par_permute.dat', 'all', '1000', '$$(Cpus)'),
-      '/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME', 16, '2 GB', '2 GB', 63,
-      'condor.submit')
-
-    # Run condor script
-    system("condor_submit condor.submit")
-
-    # Read in files written by HTCondor
-    rand <- data.frame()
-    for(i in 0:62) {
-      file <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/permute', i, '.txt')
-      results <- read.table(file, header=T)
-      rand <- rbind(rand, data.frame(results))
-    } 
 
     # See how many of these permutations have methylation as low as
     # the breakpoint regions
     bp.w.av.meth <- weighted.mean(bp.lr.gr$meth, bp.lr.gr$cpgs)
     bp.w.av.cov <- weighted.mean(bp.lr.gr$cov, bp.lr.gr$cpgs)
+    bp.cpgs.per.kb <- sum(bp.lr.gr$cpgs)/tot.size*1000
 
     ######Report p-values############
     n <- length(!is.na(rand$mean.cov))
     cat('Permutation p-values (random < observed):\n')
     cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/n, '\n')
     cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/n, '\n')
-    cat('CpG count: \t', sum(rand$tot.cpgs < sum(bp.lr.gr$cpgs))/n, '\n')
+    cat('CpGs per Kb: \t', sum(rand$cpgs.per.kb < bp.cpgs.per.kb)/n, '\n')
 
   } else {
 
-    tot.size <- sum(sizes)
     feat.in.bp <- subsetByOverlaps(feat.gr, bp.lr.gr)
 
     bp.w.av.meth <- weighted.mean(feat.in.bp$meth, feat.in.bp$cpgs,
                                   na.rm=T)
     bp.w.av.cov <- weighted.mean(feat.in.bp$cov, feat.in.bp$cpgs)
     bp.cpgs <- sum(feat.in.bp$cpgs)
+    bp.cpgs.per.kb <- bp.cpgs/sum(width(feat.in.bp))*1000
     overlap <- intersect(bp.lr.gr, feat.in.bp, ignore.strand=T)
     bp.per.cov <- sum(width(overlap))/tot.size
-
-    # Make condor submit script
-    make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
-      '/gibbon_meth/condor_par_rand.R',
-      c('$(dir)/VOK_GENOME/par_permute.dat', type, '1000', '$$(Cpus)'),
-      '/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME', 16, '2 GB', '2 GB', 63,
-      'condor.submit')
-
-    # Run condor script
-    system("condor_submit condor.submit")
-
-    # Read in files written by HTCondor
-    rand <- data.frame()
-    for(i in 0:62) {
-      file <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/permute', i, '.txt')
-      results <- read.table(file, header=T)
-      rand <- rbind(rand, data.frame(results))
-    }
 
     ######Report p-values############
     n <- length(!is.na(rand$mean.cov))
     cat('Permutation p-values (random < observed):\n')
     cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/n, '\n')
     cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/n, '\n')
-    cat('CpG count: \t', sum(rand$tot.cpgs < sum(bp.lr.gr$cpgs, na.rm=T))/n, '\n')
+    cat('CpGs per Kb: \t', sum(rand$cpgs.per.kb < bp.cpgs.per.kb)/n, '\n')
     cat('Percent region covered: \t', sum(rand$per.cov < bp.per.cov, na.rm=T)/n, '\n')
   }
   ####return dataframe of permutation values#########
