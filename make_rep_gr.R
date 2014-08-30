@@ -14,6 +14,8 @@ make_rep_gr <- function(rep_file, seqinfo) {
   #Remove 5 repeats on "random" chromosomes
   reps <- reps[grepl('chr', reps$chr)==F, ]
 
+  reps$chr <- paste0('chr', reps$chr)
+
   reps.gr <- makeGRangesFromDataFrame(reps,
                keep.extra.columns=T)
   seqlevels(reps.gr) <- seqlevels(seqinfo)

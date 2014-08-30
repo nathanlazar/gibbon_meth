@@ -26,7 +26,7 @@ library(bsseq)
 
 args <- commandArgs(TRUE)
 len_file <- args[1]
-drive <- args[2]
+cpg_drive <- args[2]
 bp_file <- args[3]
 gene_file <- args[4]
 rep_file <- args[5]
@@ -34,7 +34,10 @@ cpg_isl_file <- args[6]
 
 #bac_file <- 'BAC_amp_on_NomLeu1.0.txt'
 
-source('/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/R_meth_functions.R')
+wdir <- '/mnt/lustre1/users/lazar/GIBBONS/'
+outdir <- paste0(wdir, 'VOK_GENOME/')
+bindir <- paste0(wdir, 'gibbon_meth/')
+source(paste0(bindir, 'R_meth_functions.R'))
 
 # Read in lengths of chromsomes and make seqinfo object
 #######################################################
@@ -42,7 +45,7 @@ seqinfo <- make_seqinfo(len_file, 'NomLeu1.0')
 
 # Read in CpG data and make BSeq object with coverage over 4
 ############################################################
-all.bs <- make_all_bs(drive, 'NLE_Vok', seqinfo, 4)
+all.bs <- make_all_bs(cpg_drive, 'NLE_Vok', seqinfo, 4)
 
 #Measure methylation of CpGs with coverage of 4 or more
 ########################################################
@@ -104,15 +107,10 @@ promoter.permute <- par_permute(gene.gr.list$promoter, bp.lr.gr,
 gene.permute.list <- list(gene.permute, exon.permute, 
                           intron.permute, promoter.permute)
 
-#gene.permute.list <- lapply(gene.gr.list, par_permute, bp.lr.gr, 
-#		            all.bs, n=1000, 
-#                            type='gene', min.chr.size=12000,
-#                            end.exclude=1000)
-
 # Write out data
 #********************************************************************
-#save.image(file='/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/R.dat')
-#load('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/R.dat')
+#save.image(file=paste0(outdir, 'R.dat'))
+#load(paste0(outdir, 'R.dat'))
 #********************************************************************
 
 #################
@@ -124,9 +122,11 @@ rep.gr <- make_rep_gr(rep_file, seqinfo(all.bs))
 
 # Add mean methylation, number of CpGs and mean CpG
 # coverage to repeat GRanges object
-rep.gr <- add_meth_cpg_cov(rep.gr, all.bs)
+# rep.gr <- add_meth_cpg_cov(rep.gr, all.bs)
 
-# All repeat permutation analysis
+rep.gr <- condor_add_meth_cpg_cov(rep.gr, all.bs, 
+            paste0(outdir, 'rep_add'))
+
 rep.permute <- par_permute(rep.gr, bp.lr.gr, all.bs, n=1000,
                            type='repeat', min.chr.size=12000,
                            end.exclude=1000)
@@ -193,12 +193,12 @@ MIR.permute <-  par_permute(SINE.gr.list$MIR, bp.lr.gr,
                             all.bs, n=1000, type='MIR',
                             min.chr.size=12000,
                             end.exclude=1000)
-AluS.permute <-  par_permute(SINE.gr.list$AluS, bp.lr.gr,
-                            all.bs, n=1000, type='AluS',
-                            min.chr.size=12000,
-                            end.exclude=1000)
 AluJ.permute <-  par_permute(SINE.gr.list$AluJ, bp.lr.gr,
                             all.bs, n=1000, type='AluJ',
+                            min.chr.size=12000,
+                            end.exclude=1000)
+AluS.permute <-  par_permute(SINE.gr.list$AluS, bp.lr.gr,
+                            all.bs, n=1000, type='AluS',
                             min.chr.size=12000,
                             end.exclude=1000)
 AluY.permute <-  par_permute(SINE.gr.list$AluY, bp.lr.gr,
@@ -206,10 +206,8 @@ AluY.permute <-  par_permute(SINE.gr.list$AluY, bp.lr.gr,
                             min.chr.size=12000,
                             end.exclude=1000)
 SINE.permute.list <- list(Alu.permute, MIR.permute,
-                          AluS.permute, AluJ.permute,
+                          AluJ.permute, AluS.permute,
                           AluY.permute)
-
-
 
 #####################
 # CpG island analysis
@@ -222,8 +220,14 @@ cpg_shore.gr <- make_cpg_shore(cpg_island.gr, 1000)
 
 # Add mean methylation, number of CpGs and mean CpG
 # coverage to CpGisland GRanges object
-cpg_island.gr <- add_meth_cpg_cov(cpg_island.gr, all.bs)
-cpg_shore.gr <- add_meth_cpg_cov(cpg_shore.gr, all.bs)
+
+cpg_island.gr <- condor_add_meth_cpg_cov(cpg_island.gr, all.bs,
+            paste0(outdir, 'cpg_island_add'))
+cpg_shore.gr <- condor_add_meth_cpg_cov(cpg_shore.gr, all.bs,
+            paste0(outdir, 'cpg_shore_add'))
+
+#cpg_island.gr <- add_meth_cpg_cov(cpg_island.gr, all.bs)
+#cpg_shore.gr <- add_meth_cpg_cov(cpg_shore.gr, all.bs)
 
 # Run permutation analysis
 cpg_island.permute <- par_permute(cpg_island.gr, bp.lr.gr,
@@ -233,6 +237,7 @@ cpg_shore.permute <- par_permute(cpg_shore.gr, bp.lr.gr,
                                  all.bs, n=1000, type='CpGshore',
                                  min.chr.size=12000, end.exclude=1000)
 
+cpg.permute.list <- list(cpg_island.permute, cpg_shore.permute)
 
 # Look at differences between classes of breakpoints
 ####################################################

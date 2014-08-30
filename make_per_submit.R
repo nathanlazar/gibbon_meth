@@ -15,9 +15,8 @@
 #   num_jobs,
 #   submit_file)
 
-
 # Example: make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
-#   '/gibbon_meth/condor_par_rand.R',
+#   '/gibbon_meth/wrap_par_rand.R',
 #   c('$(dir)/VOK_GENOME/par_permute.dat', 'all', '1000', '$$(Cpus)'),
 #   '/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME', 16,  '2 GB,'
 #   '2 GB,', 63, 'condor.submit')

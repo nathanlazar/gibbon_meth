@@ -52,7 +52,7 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
   cores <- 16
   jobs <- 63
   make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
-    '/gibbon_meth/condor_par_rand.R',
+    '/gibbon_meth/wrap_par_rand.R',
     c('$(dir)/VOK_GENOME/par_permute.dat', type, '1000', '$$(Cpus)'),
     wdir, cores, '2 GB', '2 GB', jobs, 'condor.submit')
 
@@ -64,15 +64,16 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
     Sys.sleep(60) 
 
   # Wait for these to be done (there's probably a better way to do this)
-  written.lines <- rep(0,jobs)
-  while(sum(written.lines) < (jobs*cores)) {
+  written.files <- rep(0,jobs)
+  while(sum(written.files) < jobs) {
     for(i in 1:jobs) {
-      if(written.lines[i] < cores) {
+      if(written.files[i] < 1) {
         f <- paste0(wdir, '/permute.', as.character(i-1), '.txt')
-        written.lines[i] <- length(readLines(f))
+        if (length(readLines(f)) > 0)
+          written.files[i] <- 1
       }
     }
-  Sys.sleep(5) #check every 5 seconds
+    Sys.sleep(5) #check every 5 seconds
   }
 
   # Read in files written by HTCondor
@@ -113,12 +114,22 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
     bp.per.cov <- sum(width(overlap))/tot.size
 
     ######Report p-values############
-    n <- length(!is.na(rand$mean.cov))
     cat('Permutation p-values (random < observed):\n')
-    cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/n, '\n')
-    cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/n, '\n')
-    cat('CpGs per Kb: \t', sum(rand$cpgs.per.kb < bp.cpgs.per.kb)/n, '\n')
-    cat('Percent region covered: \t', sum(rand$per.cov < bp.per.cov, na.rm=T)/n, '\n')
+    meth.n <- sum(!is.nan(rand$mean.meth))
+    meth.p <- sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/meth.n
+    cat('Methylation ( n=', meth.n, ') :\t', meth.p, '\n')
+
+    cov.n <- sum(!is.nan(rand$mean.cov))
+    cov.p <- sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/cov.n
+    cat('Coverage ( n=', cov.n, ') :\t', cov.p, '\n')
+
+    cpg.n <- sum(!is.nan(rand$cpgs.per.kb))
+    cpg.p <- sum(rand$cpgs.per.kb < bp.cpgs.per.kb, na.rm=T)/cpg.n
+    cat('CpGs per Kb ( n=', cpg.n, ') :\t', cpg.p, '\n')
+
+    per.n <- sum(!is.nan(rand$per.cov))
+    per.p <- sum(rand$per.cov < bp.per.cov, na.rm=T)/per.n
+    cat('% region covered: ( n=', per.n, ') :\t', per.p, '\n')
   }
   ####return dataframe of permutation values#########
   rand
