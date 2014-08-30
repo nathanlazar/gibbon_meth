@@ -76,7 +76,7 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
     Sys.sleep(5) #check every 5 seconds
   }
 
-  # Read in files written by HTCondor
+  # Read in files written by HTCondor and combine into one data.frame
   rand <- data.frame()
   for(i in 0:(jobs-1)) {
     file <- paste0(wdir, '/permute.', i, '.txt')
@@ -85,52 +85,62 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
   }
 
   tot.size <- sum(sizes)
+  results <- list()
 
   if(type=='all') {
 
     # See how many of these permutations have methylation as low as
     # the breakpoint regions
-    bp.w.av.meth <- weighted.mean(bp.lr.gr$meth, bp.lr.gr$cpgs)
-    bp.w.av.cov <- weighted.mean(bp.lr.gr$cov, bp.lr.gr$cpgs)
-    bp.cpgs.per.kb <- sum(bp.lr.gr$cpgs)/tot.size*1000
+    results$bp.w.av.meth <- weighted.mean(bp.lr.gr$meth, bp.lr.gr$cpgs)
+    results$bp.w.av.cov <- weighted.mean(bp.lr.gr$cov, bp.lr.gr$cpgs)
+    results$bp.cpgs.per.kb <- sum(bp.lr.gr$cpgs)/tot.size*1000
 
     ######Report p-values############
-    n <- length(!is.na(rand$mean.cov))
-    cat('Permutation p-values (random < observed):\n')
-    cat('Methylation:\t',  sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/n, '\n')
-    cat('Coverage: \t', sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/n, '\n')
-    cat('CpGs per Kb: \t', sum(rand$cpgs.per.kb < bp.cpgs.per.kb)/n, '\n')
+    n <- length(!is.nan(rand$mean.cov))
+    cat(type, 'Permutation p-values (random < observed):\n')
+    results$meth.p <- sum(rand$mean.meth < results$bp.w.av.meth, na.rm=T)/n
+    cat('Methylation:\t',  results$meth.p, '\n')
+    results$cov.p <- sum(rand$mean.cov < results$bp.w.av.cov, na.rm=T)/n
+    cat('Coverage: \t', results$cov.p, '\n')
+    results$cpg.p <-  sum(rand$cpgs.per.kb < results$bp.cpgs.per.kb)/n
+    cat('CpGs per Kb: \t', results$cpg.p, '\n')
 
   } else {
 
     feat.in.bp <- subsetByOverlaps(feat.gr, bp.lr.gr)
 
-    bp.w.av.meth <- weighted.mean(feat.in.bp$meth, feat.in.bp$cpgs,
-                                  na.rm=T)
-    bp.w.av.cov <- weighted.mean(feat.in.bp$cov, feat.in.bp$cpgs)
-    bp.cpgs <- sum(feat.in.bp$cpgs)
-    bp.cpgs.per.kb <- bp.cpgs/sum(width(feat.in.bp))*1000
+    results$bp.w.av.meth <- weighted.mean(feat.in.bp$meth, feat.in.bp$cpgs,
+                                          na.rm=T)
+    results$bp.w.av.cov <- weighted.mean(feat.in.bp$cov, feat.in.bp$cpgs)
+    results$bp.cpgs <- sum(feat.in.bp$cpgs)
+    results$bp.cpgs.per.kb <- results$bp.cpgs/sum(width(feat.in.bp))*1000
     overlap <- intersect(bp.lr.gr, feat.in.bp, ignore.strand=T)
-    bp.per.cov <- sum(width(overlap))/tot.size
+    results$bp.per.cov <- sum(width(overlap))/tot.size
 
     ######Report p-values############
-    cat('Permutation p-values (random < observed):\n')
-    meth.n <- sum(!is.nan(rand$mean.meth))
-    meth.p <- sum(rand$mean.meth < bp.w.av.meth, na.rm=T)/meth.n
-    cat('Methylation ( n=', meth.n, ') :\t', meth.p, '\n')
+    cat(type, 'Permutation p-values (random < observed):\n')
+    results$meth.n <- sum(!is.nan(rand$mean.meth))
+    results$meth.p <- sum(rand$mean.meth < 
+                          results$bp.w.av.meth, na.rm=T)/results$meth.n
+    cat('Methylation ( n=', results$meth.n, ') :\t', results$meth.p, '\n')
 
-    cov.n <- sum(!is.nan(rand$mean.cov))
-    cov.p <- sum(rand$mean.cov < bp.w.av.cov, na.rm=T)/cov.n
-    cat('Coverage ( n=', cov.n, ') :\t', cov.p, '\n')
+    results$cov.n <- sum(!is.nan(rand$mean.cov))
+    results$cov.p <- sum(rand$mean.cov < 
+                         results$bp.w.av.cov, na.rm=T)/results$cov.n
+    cat('Coverage ( n=', results$cov.n, ') :\t', results$cov.p, '\n')
 
-    cpg.n <- sum(!is.nan(rand$cpgs.per.kb))
-    cpg.p <- sum(rand$cpgs.per.kb < bp.cpgs.per.kb, na.rm=T)/cpg.n
-    cat('CpGs per Kb ( n=', cpg.n, ') :\t', cpg.p, '\n')
+    results$cpg.n <- sum(!is.nan(rand$cpgs.per.kb))
+    results$cpg.p <- sum(rand$cpgs.per.kb < 
+                         results$bp.cpgs.per.kb, na.rm=T)/results$cpg.n
+    cat('CpGs per Kb ( n=', results$cpg.n, ') :\t', results$cpg.p, '\n')
 
-    per.n <- sum(!is.nan(rand$per.cov))
-    per.p <- sum(rand$per.cov < bp.per.cov, na.rm=T)/per.n
-    cat('% region covered: ( n=', per.n, ') :\t', per.p, '\n')
+    results$per.n <- sum(!is.nan(rand$per.cov))
+    results$per.p <- sum(rand$per.cov < 
+                         results$bp.per.cov, na.rm=T)/results$per.n
+    cat('% region covered: ( n=', results$per.n, ') :\t', results$per.p, '\n')
   }
-  ####return dataframe of permutation values#########
-  rand
+
+  # Return list containing p-values and dataframe of permutation values
+  results$rand <- rand
+  results
 }

@@ -5,7 +5,9 @@
 #R script to colate data on CpG methylation from cpg10 evidence files
 
 # Usage:
-# Rscript ./bin/full_R_analysis.R 
+# Rscript ./bin/full_R_analysis.R
+#   <bin directory>
+#   <output directory> 
 #   <file of chromosome lengths>
 #   <sorted and tabulated cpg evidence file>
 #   <breakpoint region file>
@@ -15,28 +17,29 @@
 
 # Example: 
 # Rscript ./bin/full_R_analysis.R 
-#   ~/VOK_BS_GENOME/NomLeu1.0_lengths.txt
-#   ~/VOK_BS_GENOME/ALIGN/ALL/cpg10gzip
-#   ~/VOK_BS_GENOME/NomLeu1.0_bp_clean.txt
-#   ~/VOK_BS_GENOME/Nomascus_leucogenys.Nleu1.0.70.fixed.gtf
-#   ~/VOK_BS_GENOME/NomLeu1.0_repmask.txt
-#   ~/GIBBON_METH/NOMLEU1/features/gibbon_cpgislands.gff
+#   gibbon_meth/
+#   VOK_GENOME/all_BP_full_analysis/
+#   VOK_GENOME/NomLeu1.0_lengths.txt
+#   VOK_GENOME/ALIGN/ALL/cpg10gzip
+#   VOK_GENOME/NomLeu1.0_bp_clean.txt
+#   VOK_GENOME/NomLeu1.0.70.genes.gtf
+#   VOK_GENOME/NomLeu1.0_repmask.txt
+#   VOK_GENOME/NomLeu1.0_cpg_islands.gff
 
 library(bsseq)
 
 args <- commandArgs(TRUE)
-len_file <- args[1]
-cpg_drive <- args[2]
-bp_file <- args[3]
-gene_file <- args[4]
-rep_file <- args[5]
-cpg_isl_file <- args[6]
+bindir <- args[1]
+outdir <- args[2]
+len_file <- args[3]
+cpg_drive <- args[4]
+bp_file <- args[5]
+gene_file <- args[6]
+rep_file <- args[7]
+cpg_isl_file <- args[8]
 
 #bac_file <- 'BAC_amp_on_NomLeu1.0.txt'
 
-wdir <- '/mnt/lustre1/users/lazar/GIBBONS/'
-outdir <- paste0(wdir, 'VOK_GENOME/')
-bindir <- paste0(wdir, 'gibbon_meth/')
 source(paste0(bindir, 'R_meth_functions.R'))
 
 # Read in lengths of chromsomes and make seqinfo object
@@ -62,7 +65,7 @@ bp.gr <- read_bp(bp_file, seqinfo)
 # Make GRanges object of 10kb regions on each side of breaks
 bp.lr.gr <- make_lr_bp(bp.gr, 10000)
 
-#Write breakpoint regions to bed file
+# Write breakpoint regions to bed file
 bp.bed <- data.frame(seqnames(bp.lr.gr), start(bp.lr.gr), end(bp.lr.gr))
 write.table(bp.bed, file='bp_regions.bed', quote=F, sep='\t',
             row.names=F, col.names=F)
@@ -106,12 +109,6 @@ promoter.permute <- par_permute(gene.gr.list$promoter, bp.lr.gr,
                                 end.exclude=1000)
 gene.permute.list <- list(gene.permute, exon.permute, 
                           intron.permute, promoter.permute)
-
-# Write out data
-#********************************************************************
-#save.image(file=paste0(outdir, 'R.dat'))
-#load(paste0(outdir, 'R.dat'))
-#********************************************************************
 
 #################
 # Repeat analysis
@@ -165,11 +162,6 @@ rep.permute.list <- list(LINE.permute, SINE.permute,
                          DNA.permute, LTR.permute,
                          Satellite.permute)
 
-#rep.permute.list <- lapply(rep.gr.list, par_permute, bp.lr.gr, 
-#                           all.bs, n=1000, type='repeat', 
-#                           min.chr.size=12000,
-#                           end.exclude=1000)
-
 # Run permutation analysis on major classes of SINEs
 # Alu, MIR, AluS, AluJ, AluY
 
@@ -179,11 +171,6 @@ SINE.gr.list$MIR <- rep.gr[grepl('MIR', rep.gr$rep_class)]
 SINE.gr.list$AluS <- rep.gr[grepl('AluS', rep.gr$rep_class)]
 SINE.gr.list$AluJ <- rep.gr[grepl('AluJ', rep.gr$rep_class)]
 SINE.gr.list$AluY <- rep.gr[grepl('AluY', rep.gr$rep_class)] 
-
-#SINE.permute.list <- lapply(SINE.gr.list, par_permute, bp.lr.gr, 
-#                           all.bs, n=1000, type='repeat', 
-#                           min.chr.size=12000,
-#                           end.exclude=1000)
 
 Alu.permute <-  par_permute(SINE.gr.list$Alu, bp.lr.gr,
                             all.bs, n=1000, type='Alu',
@@ -214,7 +201,7 @@ SINE.permute.list <- list(Alu.permute, MIR.permute,
 #####################
 
 # Read in CpG island data
-cpg_island.gr <- gff2GRanges(cpg_island_file, seqinfo)
+cpg_island.gr <- gff2GRanges(cpg_isl_file, seqinfo)
 
 cpg_shore.gr <- make_cpg_shore(cpg_island.gr, 1000)
 
@@ -238,6 +225,12 @@ cpg_shore.permute <- par_permute(cpg_shore.gr, bp.lr.gr,
                                  min.chr.size=12000, end.exclude=1000)
 
 cpg.permute.list <- list(cpg_island.permute, cpg_shore.permute)
+
+# Write out data
+#********************************************************************
+save.image(file=paste0(outdir, 'R.dat'))
+#load(paste0(outdir, 'R.dat'))
+#********************************************************************
 
 # Look at differences between classes of breakpoints
 ####################################################

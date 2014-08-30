@@ -40,4 +40,6 @@ sizes <- bp.lr.gr$size
 rand <- par_rand(all.bs, feat.gr, breaks, sizes, lengths, end.exclude, type, reps)
 print(rand)
 
+# Save data to file (doesn't work for some reason)
+#save(rand, file='rand.dat')
 
