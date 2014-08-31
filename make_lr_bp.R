@@ -1,6 +1,5 @@
 # nathan dot lazar at gmail dot com
 
-
 make_lr_bp <- function(bp.gr, span) {
 ##############################################################
 # Make GRanges object of <span> regions on each side of breaks

@@ -1,6 +1,6 @@
 # nathan dot lazar at gmail dot com
 
-par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
+par_permute <- function(wdir, bindir, feat.gr, bp.lr.gr, all.bs, n=1000,
                         type=c('gene', 'exon', 'intron', 'promoter', '3UTR',
                                '5UTR', 'CpGisl', 'CpGshore', 'repeat', 'LINE',
                                'SINE', 'DNA', 'LTR', 'SINE', 'Alu', 'AluS',
@@ -37,27 +37,28 @@ par_permute <- function(feat.gr, bp.lr.gr, all.bs, n=1000,
   names(breaks) <- names(lengths)
   sizes <- bp.lr.gr$size
 
-  # Save the objects feat.gr, bp.lr.gr and all.bs, breaks and lengths
-  #  to a file that can be read by all workers
-  save(feat.gr, bp.lr.gr, all.bs, breaks, sizes, lengths, file='par_permute.dat')
-
   # Make directory to store output
-  wdir <- paste0('/mnt/lustre1/users/lazar/GIBBONS/VOK_GENOME/', type)
+  wdir <- paste0(wdir, type)
   if(!file.exists(wdir)) {
     dir.create(wdir)
     dir.create(paste0(wdir, '/logs')) 
   }
 
+  # Save the objects feat.gr, bp.lr.gr and all.bs, breaks and lengths
+  #  to a file that can be read by all workers
+  save(feat.gr, bp.lr.gr, all.bs, breaks, sizes, lengths, 
+       file=paste0(wdir, '/par_permute.dat'))
+
   # Make condor submit script
   cores <- 16
   jobs <- 63
-  make_per_submit('/mnt/lustre1/users/lazar/GIBBONS',
-    '/gibbon_meth/wrap_par_rand.R',
-    c('$(dir)/VOK_GENOME/par_permute.dat', type, '1000', '$$(Cpus)'),
-    wdir, cores, '2 GB', '2 GB', jobs, 'condor.submit')
+  make_per_submit(wdir, paste0(bindir, '/wrap_par_rand.R'),
+    c('$(dir)/par_permute.dat', type, '1000', '$$(Cpus)'),
+    wdir, cores, '2 GB', '2 GB', jobs, 
+    paste0(wdir, '/condor.submit'))
 
   # Run condor script
-  system("condor_submit condor.submit")
+  system(paste0('condor_submit ', wdir, '/condor.submit'))
 
   # If writing over output files, wait a minute so condor can create empty files
   if(file.exists(paste0(wdir, '/permute.', as.character(jobs-1), '.txt')))
