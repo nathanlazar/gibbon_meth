@@ -136,7 +136,7 @@ par_permute <- function(wdir, bindir, feat.gr, bp.lr.gr, all.bs, n=1000,
     cat('CpGs per Kb ( n=', results$cpg.n, ') :\t', results$cpg.p, '\n')
 
     results$per.n <- sum(!is.nan(rand$per.cov))
-    results$per.p <- sum(rand$per.cov < 
+    results$per.p <- sum(rand$per.cov <= 
                          results$bp.per.cov, na.rm=T)/results$per.n
     cat('% region covered: ( n=', results$per.n, ') :\t', results$per.p, '\n')
   }

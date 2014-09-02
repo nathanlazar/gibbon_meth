@@ -82,9 +82,12 @@ bp.lr.gr <- add_meth_cpg_cov(bp.lr.gr, all.bs)
 # Run permutation analysis to determine whether the breakpoint
 # regions have lower methylation or coverage than would be seen
 # in random regions
+min.chr.size <- max(bp.lr.gr$size)+2000 # Choose only from chroms that
+                                        # are big enough to 
+                                        # contain regions
 bp.permute <- par_permute(outdir, bindir, bp.lr.gr, bp.lr.gr, all.bs, 
                           n=1000, type='all', 
-                          min.chr.size=12000, end.exclude=1000)
+                          min.chr.size=min.chr.size, end.exclude=1000)
 
 ###############
 # Gene analysis
@@ -99,16 +102,16 @@ gene.gr.list <- lapply(gene.gr.list, add_meth_cpg_cov, all.bs)
 # Run permutation analyses
 gene.permute <- par_permute(outdir, bindir, gene.gr.list$gene, 
                             bp.lr.gr, all.bs, n=1000, type='gene', 
-                            min.chr.size=12000, end.exclude=1000)
+                            min.chr.size=min.chr.size, end.exclude=1000)
 exon.permute <- par_permute(outdir, bindir, gene.gr.list$exon, 
                             bp.lr.gr, all.bs, n=1000, type='exon', 
-                            min.chr.size=12000, end.exclude=1000)
+                            min.chr.size=min.chr.size, end.exclude=1000)
 intron.permute <- par_permute(outdir, bindir, gene.gr.list$intron, 
                               bp.lr.gr, all.bs, n=1000, type='intron',
-                              min.chr.size=12000, end.exclude=1000)
+                              min.chr.size=min.chr.size, end.exclude=1000)
 promoter.permute <- par_permute(outdir, bindir, gene.gr.list$promoter, 
                                 bp.lr.gr, all.bs, n=1000, type='promoter',
-                                min.chr.size=12000, end.exclude=1000)
+                                min.chr.size=min.chr.size, end.exclude=1000)
 gene.permute.list <- list(gene=gene.permute, exon=exon.permute, 
                           intron=intron.permute, promoter=promoter.permute)
 
@@ -128,7 +131,7 @@ rep.gr <- condor_add_meth_cpg_cov(rep.gr, all.bs,
 
 rep.permute <- par_permute(outdir, bindir, rep.gr, bp.lr.gr, 
                            all.bs, n=1000,
-                           type='repeat', min.chr.size=12000,
+                           type='repeat', min.chr.size=min.chr.size,
                            end.exclude=1000)
 
 # Run permutation analysis on major repeat classes 
@@ -143,23 +146,23 @@ rep.gr.list$Satellite <- rep.gr[grepl('Satellite', rep.gr$rep_family)]
 
 LINE.permute <- par_permute(outdir, bindir, rep.gr.list$LINE, bp.lr.gr,
                             all.bs, n=1000, type='LINE',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 SINE.permute <- par_permute(outdir, bindir, rep.gr.list$SINE, bp.lr.gr,
                             all.bs, n=1000, type='SINE',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 DNA.permute <- par_permute(outdir, bindir, rep.gr.list$DNA, bp.lr.gr,
                             all.bs, n=1000, type='DNA',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 LTR.permute <- par_permute(outdir, bindir, rep.gr.list$LTR, bp.lr.gr,
                             all.bs, n=1000, type='LTR',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 Satellite.permute <- par_permute(outdir, bindir, rep.gr.list$Satellite, 
                             bp.lr.gr, all.bs, n=1000, type='Satellite',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 rep.permute.list <- list(LINE=LINE.permute, SINE=SINE.permute,
                          DNA=DNA.permute, LTR=LTR.permute,
@@ -177,23 +180,23 @@ SINE.gr.list$AluY <- rep.gr[grepl('AluY', rep.gr$rep_class)]
 
 Alu.permute <-  par_permute(outdir, bindir, SINE.gr.list$Alu, bp.lr.gr,
                             all.bs, n=1000, type='Alu',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 MIR.permute <-  par_permute(outdir, bindir, SINE.gr.list$MIR, bp.lr.gr,
                             all.bs, n=1000, type='MIR',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 AluJ.permute <-  par_permute(outdir, bindir, SINE.gr.list$AluJ, bp.lr.gr,
                             all.bs, n=1000, type='AluJ',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 AluS.permute <-  par_permute(outdir, bindir, SINE.gr.list$AluS, bp.lr.gr,
                             all.bs, n=1000, type='AluS',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 AluY.permute <-  par_permute(outdir, bindir, SINE.gr.list$AluY, bp.lr.gr,
                             all.bs, n=1000, type='AluY',
-                            min.chr.size=12000,
+                            min.chr.size=min.chr.size,
                             end.exclude=1000)
 SINE.permute.list <- list(Alu=Alu.permute, MIR=MIR.permute,
                           AluJ=AluJ.permute, AluS=AluS.permute,
@@ -222,13 +225,20 @@ cpg_shore.gr <- condor_add_meth_cpg_cov(cpg_shore.gr, all.bs,
 # Run permutation analysis
 cpg_island.permute <- par_permute(outdir, bindir, cpg_island.gr, bp.lr.gr,
                                   all.bs, n=1000, type='CpGisl',
-                                  min.chr.size=12000, end.exclude=1000)
+                                  min.chr.size=min.chr.size, end.exclude=1000)
 cpg_shore.permute <- par_permute(outdir, bindir, cpg_shore.gr, bp.lr.gr,
                                  all.bs, n=1000, type='CpGshore',
-                                 min.chr.size=12000, end.exclude=1000)
+                                 min.chr.size=min.chr.size, end.exclude=1000)
 
 cpg.permute.list <- list(cpg_island=cpg_island.permute, 
                          cpg_shore=cpg_shore.permute)
+
+#################################################
+# Combine permutation results into one data frame
+#################################################
+
+per.results <- combine_per(bp.permute, gene.permute.list, rep.permute, 
+  rep.permute.list, SINE.permute.list, cpg.permute.list)
 
 # Write out data
 #********************************************************************
