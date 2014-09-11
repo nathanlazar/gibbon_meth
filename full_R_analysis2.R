@@ -67,8 +67,8 @@ all.cpg.meth <- mean(mcgetMeth(all.bs, type='raw', what='perBase'),
 bp.gr <- read_bp(bp_file, seqinfo)
 
 # Make GRanges object of 10kb regions on each side of breaks
-# unless bp_file has 'BAC' in it or outdir name has 'inside' (hack)
-if(grepl('BAC', bp_file) | grepl('inside', outdir)) {
+# unless bp_file has 'BAC' in it (hack)
+if(grepl('BAC', bp_file)) {
   bp.lr.gr <- bp.gr
 } else {
   bp.lr.gr <- make_lr_bp(bp.gr, 10000)

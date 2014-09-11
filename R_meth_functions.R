@@ -9,6 +9,7 @@ dir <- '/mnt/lustre1/users/lazar/GIBBONS/gibbon_meth/'
 
 source(paste0(dir, 'make_seqinfo.R'))
 source(paste0(dir, 'mcread.bsmooth.R'))
+source(paste0(dir, 'make_tracks.R'))
 source(paste0(dir, 'mcgetMeth.R'))
 source(paste0(dir, 'mcgetCoverage.R'))
 source(paste0(dir, 'make_all_bs.R'))

@@ -92,6 +92,7 @@ par_permute <- function(wdir, bindir, feat.gr, bp.lr.gr, all.bs, n=1000,
 
     # See how many of these permutations have methylation as low as
     # the breakpoint regions
+    results$bp.count <- length(bp.lr.gr)
     results$bp.w.av.meth <- weighted.mean(bp.lr.gr$meth, bp.lr.gr$cpgs)
     results$bp.w.av.cov <- weighted.mean(bp.lr.gr$cov, bp.lr.gr$cpgs)
     results$bp.cpgs.per.kb <- sum(bp.lr.gr$cpgs)/tot.size*1000
@@ -110,6 +111,7 @@ par_permute <- function(wdir, bindir, feat.gr, bp.lr.gr, all.bs, n=1000,
 
     feat.in.bp <- subsetByOverlaps(feat.gr, bp.lr.gr)
 
+    results$bp.count <- length(feat.in.bp)
     results$bp.w.av.meth <- weighted.mean(feat.in.bp$meth, feat.in.bp$cpgs,
                                           na.rm=T)
     results$bp.w.av.cov <- weighted.mean(feat.in.bp$cov, feat.in.bp$cpgs)
@@ -119,7 +121,7 @@ par_permute <- function(wdir, bindir, feat.gr, bp.lr.gr, all.bs, n=1000,
     results$bp.per.cov <- sum(width(overlap))/tot.size
 
     ######Report p-values############
-    cat(type, 'Permutation p-values (random < observed):\n')
+    cat('For ', results$bp.count, 'features of type ', type, 'the permutation p-values are: (random < observed)\n')
     results$meth.n <- sum(!is.nan(rand$mean.meth))
     results$meth.p <- sum(rand$mean.meth < 
                           results$bp.w.av.meth, na.rm=T)/results$meth.n
