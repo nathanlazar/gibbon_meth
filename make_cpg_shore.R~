@@ -1,8 +1,0 @@
-# nathan dot lazar at gmail dot com
-
-make_cpg_shore <- function(cpg_island.gr, shore_size) {
-########################################################
-# Makes GRanges object of shores up to size <shore_size>
-# that are not overlapping other CpG islands
-########################################################
-
